@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-use Laravel\Passport\HasApiTokens;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\Status;
+use App\Enums\UserType\UserType;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
 {
     use HasApiTokens;
-    use HasFactory;
-    use Notifiable;
 
     protected $fillable = [
         'first_name',
@@ -19,28 +19,45 @@ class User extends Authenticatable
         'email',
         'phone_number',
         'password',
-        'email_verified_at',
+        'user_type',
+        'status',
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
+    protected $hidden = ['password', 'remember_token'];
+
+    protected $casts = [
+        'user_type'  => UserType::class,
+        'status'     => Status::class,
+        'password' => 'hashed',
+        'email_verified_at' => 'datetime',
     ];
 
-    protected function casts(): array
+    // ─── Relationships ────────────────────────────────────
+
+    public function profile(): HasOne
     {
-        return [
-
-            'email_verified_at' => 'datetime',
-
-            'password' => 'hashed',
-        ];
+        return $this->hasOne(UserProfile::class);
     }
 
-    public function getFullNameAttribute(): string
+    public function driverProfile(): HasOne
     {
-        return trim(
-            $this->first_name . ' ' . $this->last_name
-        );
+        return $this->hasOne(DriverProfile::class);
+    }
+
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(Vehicle::class);
+    }
+
+    // ─── Helpers ──────────────────────────────────────────
+
+    public function isDriver(): bool
+    {
+        return $this->user_type === UserType::DRIVER;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === Status::ACTIVE;
     }
 }
