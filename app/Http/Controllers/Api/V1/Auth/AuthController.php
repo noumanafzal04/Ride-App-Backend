@@ -23,7 +23,7 @@ class AuthController extends Controller
 {
     public $resourceName = 'auth';
 
-    public function __construct(protected SignupAction $signupAction) {}
+    public function __construct(protected SignupAction $signupAction, protected VerifyOtpAction $verifyOtpAction, protected LoginAction $loginAction) {}
 
     public function signup(
         SignUpRequest $request,
@@ -38,10 +38,9 @@ class AuthController extends Controller
 
     public function verifyOtp(
         VerifyOtpRequest $request,
-        VerifyOtpAction $action
     ) {
 
-        $action->execute(
+        $this->verifyOtpAction->execute(
             $request->email,
             $request->otp
         );
@@ -54,10 +53,9 @@ class AuthController extends Controller
 
     public function login(
         LoginRequest $request,
-        LoginAction $action
     ) {
 
-        $data = $action->execute(
+        $data = $this->loginAction->execute(
             $request->email,
             $request->password
         );

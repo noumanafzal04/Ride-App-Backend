@@ -15,7 +15,6 @@ class UserResource extends ApiResource
             'id' => $this->id,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
-            'full_name' => $this->full_name,
             'email' => $this->email,
             'phone_number' => $this->phone_number,
             'email_verified_at' => $this->email_verified_at,
