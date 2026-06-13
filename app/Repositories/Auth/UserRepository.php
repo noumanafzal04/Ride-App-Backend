@@ -3,9 +3,15 @@
 namespace App\Repositories\Auth;
 
 use App\Models\User;
+use App\Repositories\BaseRepository;
 
-class UserRepository
+class UserRepository extends BaseRepository
 {
+    public function __construct()
+    {
+        $this->model = new User();
+    }
+
     public function create(array $data): User
     {
         return User::create($data);
@@ -13,8 +19,7 @@ class UserRepository
 
     public function findByEmail(string $email): ?User
     {
-        return User::where('email', $email)
-            ->first();
+        return User::where('email', $email)->first();
     }
 
     public function verifyEmail(User $user): bool

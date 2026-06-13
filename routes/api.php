@@ -8,4 +8,5 @@ Route::prefix('v1')->group(function () {
      * auth route
      */
     require __DIR__ . '/api/auth.php';
+    require __DIR__ . '/api/driver.php';
 });

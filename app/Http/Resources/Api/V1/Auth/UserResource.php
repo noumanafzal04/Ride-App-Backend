@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1\Auth;
 
 use App\Http\Resources\Api\V1\ApiResource;
+use App\Http\Resources\Api\V1\Profile\UserProfileResource;
 use Illuminate\Http\Request;
 
 class UserResource extends ApiResource
@@ -17,6 +18,7 @@ class UserResource extends ApiResource
             'last_name' => $this->last_name,
             'email' => $this->email,
             'phone_number' => $this->phone_number,
+            'profile' => $this->whenLoaded('profile', fn() => new UserProfileResource($this->profile)),
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
         ];

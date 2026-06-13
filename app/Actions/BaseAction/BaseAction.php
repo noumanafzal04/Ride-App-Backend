@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Company;
+namespace App\Actions\BaseAction;
 
 use App\Exceptions\ApiException;
 use Illuminate\Support\Facades\DB;
@@ -118,7 +118,6 @@ class BaseAction
             if (!$reset || !$updated) {
                 throw new ApiException(__("{$this->resourceName}.default_failed"), 422);
             }
-
         });
     }
 

@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('model_id')->constrained('vehicle_models')->restrictOnDelete();
+            $table->string('vehicle_image_path');
             $table->smallInteger('manufacture_year');
             $table->string('color', 40);
             $table->string('registration_number', 30)->unique();

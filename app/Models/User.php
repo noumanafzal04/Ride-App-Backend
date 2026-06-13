@@ -16,21 +16,25 @@ class User extends Authenticatable
     protected $fillable = [
         'first_name',
         'last_name',
-        'email',
         'phone_number',
+        'email',
         'password',
         'user_type',
-        'email_verified_at',
         'status',
+        'phone_verified_at',
+        'email_verified_at',
+        'last_login_at',
     ];
 
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
-        'user_type'  => UserType::class,
-        'status'     => Status::class,
-        'password' => 'hashed',
-        'email_verified_at' => 'datetime',
+        'user_type'          => UserType::class,
+        'status'             => Status::class,
+        'password'           => 'hashed',
+        'phone_verified_at'  => 'datetime',
+        'email_verified_at'  => 'datetime',
+        'last_login_at'      => 'datetime',
     ];
 
     // ─── Relationships ────────────────────────────────────

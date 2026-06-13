@@ -9,15 +9,16 @@ class UserProfile extends Model
 {
     protected $fillable = [
         'user_id',
-        'profile_photo',
-        'date_of_birth',
+        'profile_image',   // was profile_photo — actual column is profile_image
+        'dob',             // was date_of_birth — actual column is dob
         'gender',
         'city',
         'address',
+        'bio',             // exists in DB, was missing from model
     ];
 
     protected $casts = [
-        'date_of_birth' => 'date',
+        'dob' => 'date',
     ];
 
     public function user(): BelongsTo
