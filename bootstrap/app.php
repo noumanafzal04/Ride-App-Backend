@@ -16,6 +16,30 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\ApiContextMiddleware::class,
         ]);
     })
+    ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->api([
+            \App\Http\Middleware\ApiContextMiddleware::class,
+        ]);
+
+        $middleware->alias([
+            'auth' => \App\Http\Middleware\Authenticate::class,
+        ]);
+    })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
-    })->create();
+
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated',
+                    'errors'  => null,
+                    'meta' => [
+                        'timestamp' => now()->toISOString(),
+                        'version'   => $request->attributes->get('version'),
+                        'trace_id'  => $request->attributes->get('trace_id'),
+                    ],
+                ], 401);
+            }
+        });
+    })
+    ->create();

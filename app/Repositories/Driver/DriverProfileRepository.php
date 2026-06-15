@@ -12,12 +12,11 @@ class DriverProfileRepository extends BaseRepository
         $this->model = new DriverProfile();
     }
 
-    public function createForUser(int $userId, array $data): DriverProfile
+    // DriverProfileRepository.php
+
+    public function updateOrCreateForUser(int $userId, array $data): DriverProfile
     {
-        return $this->model->create([
-            'user_id' => $userId,
-            ...$data,
-        ]);
+        return $this->model->updateOrCreate(['user_id' => $userId], $data);
     }
 
     public function existsForUser(int $userId): bool

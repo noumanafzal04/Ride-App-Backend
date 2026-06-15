@@ -12,14 +12,15 @@ class UniqueFieldsValidator
         ?int $ignoreId = null
     ): void {
 
-        foreach ($fields as $field => $value) {
+        foreach ($fields as $attribute => $value) {
 
             if (blank($value)) {
                 continue;
             }
 
-            $query = $model::query()
-                ->where($field, $value);
+            $column = str($attribute)->afterLast('.')->toString();
+
+            $query = $model::query()->where($column, $value);
 
             foreach ($conditions as $col => $val) {
                 $query->where($col, $val);
@@ -31,9 +32,8 @@ class UniqueFieldsValidator
 
             if ($query->exists()) {
                 $validator->errors()->add(
-                    $field,
-                    ucfirst(str_replace('_', ' ', $field))
-                    . ' already exists.'
+                    $attribute,
+                    ucfirst(str_replace('_', ' ', $column)) . ' already exists.'
                 );
             }
         }

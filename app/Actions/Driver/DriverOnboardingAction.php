@@ -4,7 +4,6 @@
 namespace App\Actions\Driver;
 
 use App\Actions\BaseAction\BaseAction;
-use App\Constants\ResourceFields;
 use App\Enums\UserType\UserType;
 use App\Exceptions\ApiException;
 use App\Models\User;
@@ -32,14 +31,9 @@ class DriverOnboardingAction extends BaseAction
     {
         return DB::transaction(function () use ($user, $data) {
 
-            // 1. flip user type to driver
-            $updated = $this->repository->update(
-                $user->id,
-                ['user_type' => UserType::DRIVER->value]
-            );
-
-            if (!$updated) {
-                throw new ApiException(__("{$this->resourceName}.update_failed"), 422);
+            // 1. flip user type to driver (only if not already)
+            if (!$user->isDriver()) {
+                $this->repository->update($user->id, ['user_type' => UserType::DRIVER->value]);
             }
 
             // 2. upsert user profile
@@ -54,39 +48,43 @@ class DriverOnboardingAction extends BaseAction
                 );
             }
 
-            $this->userProfileRepository->updateOrCreateForUser($user->id, $profileData);
-
-            // 3. guard duplicate driver profile
-            if ($this->driverProfileRepository->existsForUser($user->id)) {
-                throw new ApiException(__("{$this->resourceName}.already_exists"), 422);
+            if (!empty($profileData)) {
+                $this->userProfileRepository->updateOrCreateForUser($user->id, $profileData);
             }
 
-            // 4. upload driver credential images
-            $driverData = $data['driver'];
+            // 3. upsert driver profile
+            $driverData = $data['driver'] ?? [];
 
             foreach (['cnic_front_image', 'cnic_back_image', 'license_front_image', 'license_back_image'] as $field) {
-                $folder = str_contains($field, 'cnic') ? 'driver/cnic' : 'driver/license';
-                $driverData[$field] = $this->imageUploadService->upload(
-                    file: $driverData[$field],
-                    folder: $folder,
-                );
+                if (!empty($driverData[$field])) {
+                    $folder = str_contains($field, 'cnic') ? 'driver/cnic' : 'driver/license';
+                    $driverData[$field] = $this->imageUploadService->upload(
+                        file: $driverData[$field],
+                        folder: $folder,
+                    );
+                }
             }
 
-            $this->driverProfileRepository->createForUser($user->id, $driverData);
+            if (!empty($driverData)) {
+                $this->driverProfileRepository->updateOrCreateForUser($user->id, $driverData);
+            }
 
-            // 5. upload vehicle image then create vehicle
-            $vehicleData = $data['vehicle'];
+            // 4. upsert vehicle
+            $vehicleData = $data['vehicle'] ?? [];
 
-            $vehicleData['vehicle_image_path'] = $this->imageUploadService->upload(
-                file: $vehicleData['vehicle_image'],
-                folder: 'vehicles',
-            );
+            if (!empty($vehicleData['vehicle_image'])) {
+                $vehicleData['vehicle_image_path'] = $this->imageUploadService->upload(
+                    file: $vehicleData['vehicle_image'],
+                    folder: 'vehicles',
+                );
+                unset($vehicleData['vehicle_image']);
+            }
 
-            unset($vehicleData['vehicle_image']);
+            if (!empty($vehicleData)) {
+                $this->vehicleRepository->updateOrCreateForUser($user->id, $vehicleData);
+            }
 
-            $this->vehicleRepository->createForUser($user->id, $vehicleData);
-
-            // return user with full relations using BuildsWithRelations
+            // return user with full relations
             return $this->repository->query()->with(
                 BuildsWithRelations::relations(
                     User::RESOURCE_RELATIONS,

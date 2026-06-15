@@ -37,4 +37,6 @@ class ResourceFields
     public const VEHICLE_MAKE_FIELDS = ['id', 'name', 'status'];
 
     public const DRIVER_LIST_FIELDS = ['id', 'user_id', 'cnic_number', 'license_number', 'verification_status', 'is_online'];
+    public const VEHICLE_MAKE_LIST_FIELDS = ['id', 'name', 'status'];
+    public const VEHICLE_MODEL_LIST_FIELDS = ['id', 'make_id', 'name', 'seating_capacity', 'status'];
 }

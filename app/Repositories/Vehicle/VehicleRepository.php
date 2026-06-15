@@ -17,14 +17,17 @@ class VehicleRepository extends BaseRepository
         $this->model = new Vehicle();
     }
 
-    public function createForUser(int $userId, array $data): Vehicle
-    {
-        $model = VehicleModel::findOrFail($data['model_id']);
-        $payload = $this->preparePayload($data, ResourceFields::VEHICLE_CREATE_FIELDS, [
-            'user_id' => $userId,
-            'seating_capacity' => $model->seating_capacity,
-        ]);
+    // VehicleRepository.php
 
-        return $this->model->create($payload);
+    public function updateOrCreateForUser(int $userId, array $data): Vehicle
+    {
+        if (!empty($data['model_id'])) {
+            $model = VehicleModel::findOrFail($data['model_id']);
+            $data['seating_capacity'] = $model->seating_capacity;
+        }
+
+        $payload = $this->preparePayload($data, ResourceFields::VEHICLE_CREATE_FIELDS);
+
+        return $this->model->updateOrCreate(['user_id' => $userId], $payload);
     }
 }
