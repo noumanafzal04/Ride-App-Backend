@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('make_id')->constrained('vehicle_makes')->cascadeOnDelete();
             $table->string('name', 80);
+            $table->unsignedTinyInteger('seating_capacity')->default(5);
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
 

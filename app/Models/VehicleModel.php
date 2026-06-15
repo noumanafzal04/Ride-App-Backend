@@ -14,10 +14,12 @@ class VehicleModel extends Model
     protected $fillable = [
         'make_id',
         'name',
+        'seating_capacity',
         'status',
     ];
 
     protected $casts = [
+        'seating_capacity' => 'integer',
         'status' => Status::class,
     ];
 
