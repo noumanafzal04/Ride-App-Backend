@@ -1,4 +1,5 @@
 <?php
+// app/Repositories/Auth/UserRepository.php
 
 namespace App\Repositories\Auth;
 
@@ -14,18 +15,16 @@ class UserRepository extends BaseRepository
 
     public function create(array $data): User
     {
-        return User::create($data);
+        return $this->model->create($data);
     }
 
     public function findByEmail(string $email): ?User
     {
-        return User::where('email', $email)->first();
+        return $this->model->where('email', $email)->first();
     }
 
     public function verifyEmail(User $user): bool
     {
-        return $user->update([
-            'email_verified_at' => now(),
-        ]);
+        return $user->update(['email_verified_at' => now()]);
     }
 }

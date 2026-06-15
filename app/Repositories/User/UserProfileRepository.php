@@ -14,14 +14,6 @@ class UserProfileRepository extends BaseRepository
 
     public function updateOrCreateForUser(int $userId, array $data): UserProfile
     {
-        return $this->model->updateOrCreate(
-            ['user_id' => $userId],
-            $data
-        );
-    }
-
-    public function findByUserId(int $userId): ?UserProfile
-    {
-        return $this->model->where('user_id', $userId)->first();
+        return $this->model->updateOrCreate(['user_id' => $userId], $data);
     }
 }

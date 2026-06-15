@@ -20,8 +20,8 @@ class DriverProfileRepository extends BaseRepository
         ]);
     }
 
-    public function findByUserId(int $userId): ?DriverProfile
+    public function existsForUser(int $userId): bool
     {
-        return $this->model->where('user_id', $userId)->first();
+        return $this->model->where('user_id', $userId)->exists();
     }
 }

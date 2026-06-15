@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Constants\ResourceFields;
 use App\Enums\Status;
 use App\Enums\UserType\UserType;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -35,6 +36,30 @@ class User extends Authenticatable
         'phone_verified_at'  => 'datetime',
         'email_verified_at'  => 'datetime',
         'last_login_at'      => 'datetime',
+    ];
+
+
+    public const RESOURCE_RELATIONS = [
+        'profile' => [
+            'select' => ResourceFields::USER_PROFILE_FIELDS,
+            'show'   => ResourceFields::USER_PROFILE_FIELDS,
+        ],
+        'driverProfile' => [
+            'select' => ResourceFields::DRIVER_PROFILE_FIELDS,
+            'show'   => ResourceFields::DRIVER_PROFILE_FIELDS,
+        ],
+        'vehicles' => [
+            'select' => ResourceFields::VEHICLE_CREATE_FIELDS,
+            'show'   => ResourceFields::VEHICLE_CREATE_FIELDS,
+        ],
+        'vehicles.vehicleModel' => [
+            'select' => ResourceFields::VEHICLE_MODEL_FIELDS,
+            'show'   => ResourceFields::VEHICLE_MODEL_FIELDS,
+        ],
+        'vehicles.vehicleModel.make' => [
+            'select' => ResourceFields::VEHICLE_MAKE_FIELDS,
+            'show'   => ResourceFields::VEHICLE_MAKE_FIELDS,
+        ],
     ];
 
     // ─── Relationships ────────────────────────────────────

@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/Api/V1/Driver/DriverProfileController.php
 
 namespace App\Http\Controllers\Api\V1\Driver;
 
@@ -6,22 +7,21 @@ use App\Actions\Driver\DriverOnboardingAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Driver\DriverOnboardingRequest;
 use App\Http\Resources\Api\V1\Driver\DriverOnboardingResource;
-use App\Support\ApiResponse;
 
 class DriverProfileController extends Controller
 {
-    public function __construct(
-        protected DriverOnboardingAction $onboardingAction,
-    ) {}
+    public $resourceName = 'driver_onboarding';
+
+    public function __construct(protected DriverOnboardingAction $action) {}
 
     public function onboard(DriverOnboardingRequest $request)
     {
-        $user = $this->onboardingAction->execute(
+        $user = $this->action->execute(
             auth()->user(),
             $request->validated()
         );
 
         return (new DriverOnboardingResource($user))
-            ->message('Driver onboarding completed successfully.');
+            ->message(__("{$this->resourceName}.completed"));
     }
 }

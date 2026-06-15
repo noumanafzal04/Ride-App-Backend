@@ -30,7 +30,7 @@ Route::prefix('auth')
             ->group(function () {
 
                 Route::get(
-                    '/profile',
+                    '/me',
                     [AuthController::class, 'profile']
                 );
 
