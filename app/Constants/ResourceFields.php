@@ -4,6 +4,7 @@ namespace App\Constants;
 
 class ResourceFields
 {
+    public const  CITIES_LIST_FIELDS = ['id', 'name', 'status'];
     public const DRIVER_PROFILE_FIELDS = [
         'cnic_number',
         'cnic_front_image',

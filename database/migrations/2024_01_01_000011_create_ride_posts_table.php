@@ -11,7 +11,6 @@ return new class extends Migration
         Schema::create('ride_posts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('driver_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('vehicle_id')->constrained('vehicles')->restrictOnDelete();
             $table->string('from_city', 100);
             $table->string('to_city', 100);
             $table->text('from_address')->nullable();
