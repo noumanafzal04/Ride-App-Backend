@@ -78,7 +78,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Vehicle::class);
     }
-
+    public function ridePosts(): HasMany
+    {
+        return $this->hasMany(RidePost::class, 'driver_id');
+    }
     // ─── Helpers ──────────────────────────────────────────
 
     public function isDriver(): bool

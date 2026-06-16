@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Api/V1/Driver/DriverProfileController.php
 
 namespace App\Http\Controllers\Api\V1\Driver;
 

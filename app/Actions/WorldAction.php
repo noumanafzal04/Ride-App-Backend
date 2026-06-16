@@ -28,7 +28,7 @@ class WorldAction extends BaseAction
                 }
             },
 
-            select: ResourceFields::CITIES_LIST_FIELDS
+            select: ResourceFields::CITY_FIELDS
         );
     }
 }

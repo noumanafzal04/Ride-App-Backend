@@ -4,7 +4,7 @@ namespace App\Constants;
 
 class ResourceFields
 {
-    public const  CITIES_LIST_FIELDS = ['id', 'name', 'status'];
+    public const CITY_FIELDS = ['id', 'name', 'status'];
     public const DRIVER_PROFILE_FIELDS = [
         'cnic_number',
         'cnic_front_image',
@@ -40,4 +40,30 @@ class ResourceFields
     public const DRIVER_LIST_FIELDS = ['id', 'user_id', 'cnic_number', 'license_number', 'verification_status', 'is_online'];
     public const VEHICLE_MAKE_LIST_FIELDS = ['id', 'name', 'status'];
     public const VEHICLE_MODEL_LIST_FIELDS = ['id', 'make_id', 'name', 'seating_capacity', 'status'];
+
+    //post ride
+
+
+    public const RIDE_POST_DRIVER_FIELDS = ['id', 'first_name', 'last_name', 'phone_number'];
+    public const RIDE_POST_VEHICLE_FIELDS = ['id', 'user_id', 'model_id', 'vehicle_image_path', 'color', 'seating_capacity'];
+
+    public const RIDE_POST_LIST_FIELDS = [
+        'id',
+        'driver_id',
+        'from_city_id',
+        'to_city_id',
+        'departure_at',
+        'available_seats',
+        'price_per_seat',
+        'luggage_allowed',
+        'post_type',
+        'status',
+        'from_address',
+        'from_latitude',
+        'from_longitude',
+        'to_address',
+        'to_latitude',
+        'to_longitude',
+        'notes'
+    ];
 }
