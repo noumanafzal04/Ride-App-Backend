@@ -6,6 +6,8 @@ class ResourceFields
 {
     public const CITY_FIELDS = ['id', 'name', 'status'];
     public const DRIVER_PROFILE_FIELDS = [
+        'id',
+        'user_id',
         'cnic_number',
         'cnic_front_image',
         'cnic_back_image',
@@ -15,6 +17,8 @@ class ResourceFields
     ];
 
     public const USER_PROFILE_FIELDS = [
+        'id',       // ← missing
+        'user_id',  // ← missing — FK to match hasOne
         'profile_image',
         'dob',
         'gender',
@@ -32,6 +36,19 @@ class ResourceFields
         'seating_capacity',
         'luggage_capacity',
         'has_air_conditioner',
+    ];
+    public const VEHICLE_FIELDS = [
+        'id',
+        'user_id',
+        'model_id',
+        'vehicle_image_path',
+        'manufacture_year',
+        'color',
+        'registration_number',
+        'seating_capacity',
+        'luggage_capacity',
+        'has_air_conditioner',
+        'status',
     ];
 
     public const VEHICLE_MODEL_FIELDS = ['id', 'make_id', 'name', 'status'];
@@ -65,5 +82,25 @@ class ResourceFields
         'to_latitude',
         'to_longitude',
         'notes'
+    ];
+
+
+    // WRITE constants — no id, no FK
+    public const USER_PROFILE_CREATE_FIELDS = [
+        'profile_image',
+        'dob',
+        'gender',
+        'city',
+        'address',
+        'bio',
+    ];
+
+    public const DRIVER_PROFILE_CREATE_FIELDS = [
+        'cnic_number',
+        'cnic_front_image',
+        'cnic_back_image',
+        'license_number',
+        'license_front_image',
+        'license_back_image',
     ];
 }

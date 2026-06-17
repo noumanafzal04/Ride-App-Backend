@@ -19,6 +19,7 @@ class VehicleRepository extends BaseRepository
 
     // VehicleRepository.php
 
+    // VehicleRepository.php
     public function updateOrCreateForUser(int $userId, array $data): Vehicle
     {
         if (!empty($data['model_id'])) {
@@ -28,6 +29,9 @@ class VehicleRepository extends BaseRepository
 
         $payload = $this->preparePayload($data, ResourceFields::VEHICLE_CREATE_FIELDS);
 
-        return $this->model->updateOrCreate(['user_id' => $userId], $payload);
+        return $this->model->updateOrCreate(
+            ['user_id' => $userId],
+            $payload
+        );
     }
 }

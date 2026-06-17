@@ -19,8 +19,8 @@ class DriverProfileController extends Controller
             auth()->user(),
             $request->validated()
         );
-
         return (new DriverOnboardingResource($user))
+            ->wrapWith("{$this->resourceName}")
             ->message(__("{$this->resourceName}.completed"));
     }
 }

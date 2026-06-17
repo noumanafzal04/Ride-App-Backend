@@ -49,8 +49,8 @@ class User extends Authenticatable
             'show'   => ResourceFields::DRIVER_PROFILE_FIELDS,
         ],
         'vehicles' => [
-            'select' => ResourceFields::VEHICLE_CREATE_FIELDS,
-            'show'   => ResourceFields::VEHICLE_CREATE_FIELDS,
+            'select' => ResourceFields::VEHICLE_FIELDS,
+            'show'   => ResourceFields::VEHICLE_FIELDS,
         ],
         'vehicles.vehicleModel' => [
             'select' => ResourceFields::VEHICLE_MODEL_FIELDS,

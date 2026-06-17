@@ -85,7 +85,7 @@ class DriverOnboardingAction extends BaseAction
             }
 
             // return user with full relations
-            return $this->repository->query()->with(
+            return $data =  $this->repository->query()->with(
                 BuildsWithRelations::relations(
                     User::RESOURCE_RELATIONS,
                     [

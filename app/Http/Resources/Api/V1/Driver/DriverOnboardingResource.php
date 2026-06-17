@@ -49,14 +49,15 @@ class DriverOnboardingResource extends ApiResource
                     'luggage_capacity'    => $v->luggage_capacity,
                     'has_air_conditioner' => $v->has_air_conditioner,
                     'vehicle_image_path'  => $v->vehicle_image_path,
-                    'model' => $v->whenLoaded('vehicleModel', fn() => [
+
+                    'model' => $v->relationLoaded('vehicleModel') ? [
                         'id'   => $v->vehicleModel?->id,
                         'name' => $v->vehicleModel?->name,
-                        'make' => $v->vehicleModel?->whenLoaded('make', fn() => [
+                        'make' => $v->vehicleModel?->relationLoaded('make') ? [
                             'id'   => $v->vehicleModel->make?->id,
                             'name' => $v->vehicleModel->make?->name,
-                        ]),
-                    ]),
+                        ] : null,
+                    ] : null,
                 ]);
             }),
         ];

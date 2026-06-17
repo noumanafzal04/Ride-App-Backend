@@ -2,8 +2,6 @@
 
 namespace App\Support;
 
-use InvalidArgumentException;
-
 class BuildsWithRelations
 {
     public static function relations(
@@ -11,27 +9,39 @@ class BuildsWithRelations
         ?array $onlyRelations = null,
         array $overrides = []
     ): array {
-        // filter only requested relations (if provided)
+
         $relations = $onlyRelations
             ? array_intersect_key($definitions, array_flip($onlyRelations))
             : $definitions;
 
-        return collect($relations)
-            ->map(function ($config, $relation) use ($overrides) {
+        $result = [];
 
-                // apply override if exists
-                if (isset($overrides[$relation])) {
-                    $config = array_merge($config, $overrides[$relation]);
+        foreach ($relations as $relation => $config) {
+
+            if (isset($overrides[$relation])) {
+                $config = array_merge($config, $overrides[$relation]);
+            }
+
+            $select = $config['select'] ?? [];
+
+            if (str_contains($relation, '.')) {
+                // nested — MUST use closure, colon syntax doesn't work
+                if (!empty($select)) {
+                    $fields = $select;
+                    $result[$relation] = fn($query) => $query->select($fields);
+                } else {
+                    $result[$relation] = fn($query) => $query;
                 }
-
-                // resolve select fields
-                if (!empty($config['select'])) {
-                    return $relation . ':' . implode(',', $config['select']);
+            } else {
+                // top-level — colon syntax works
+                if (!empty($select)) {
+                    $result[] = $relation . ':' . implode(',', $select);
+                } else {
+                    $result[] = $relation;
                 }
+            }
+        }
 
-                return $relation;
-            })
-            ->values()
-            ->toArray();
+        return $result;
     }
 }
