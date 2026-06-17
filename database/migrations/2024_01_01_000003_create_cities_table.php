@@ -13,10 +13,14 @@ return new class extends Migration
     {
         Schema::create('cities', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
-            $table->boolean('status')->default(true);
+            $table->string('name');          // 'Lahore'
+            $table->string('province');      // 'Punjab'
+            $table->decimal('lat', 10, 7);   // 31.5497000
+            $table->decimal('lon', 10, 7);   // 74.3436000
             $table->timestamps();
+            $table->index('name');           // fast search
         });
+
     }
 
     /**

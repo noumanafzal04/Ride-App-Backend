@@ -9,11 +9,15 @@ class City extends Model
 {
     protected $table = 'cities';
 
-    protected $fillable = ['name', 'status'];
+    protected $fillable = ['name', 'province', 'lat', 'lon'];
 
-    protected $casts = [
-        'status' => 'boolean',
-    ];
+//    protected $casts = [
+//        'status' => 'boolean',
+//    ];
+
+    public function distancesFrom() {
+        return $this->hasMany(CityDistance::class, 'from_city_id');
+    }
 
     public function ridePostsFrom(): HasMany
     {
