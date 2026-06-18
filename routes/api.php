@@ -17,6 +17,7 @@ Route::prefix('v1')->group(function () {
         Route::get('cities', [WorldController::class, 'cities']);
         require __DIR__ . '/api/driver.php';
         require __DIR__ . '/api/vehicle.php';
+        require __DIR__ . '/api/ride.php';
     });
 });
 

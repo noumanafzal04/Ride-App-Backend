@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Constants\ResourceFields;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RidePost extends Model
 {
@@ -83,5 +84,10 @@ class RidePost extends Model
     public function toCity(): BelongsTo
     {
         return $this->belongsTo(City::class, 'to_city_id');
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(RideBooking::class, 'ride_post_id');
     }
 }
