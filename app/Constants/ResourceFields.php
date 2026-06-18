@@ -4,7 +4,7 @@ namespace App\Constants;
 
 class ResourceFields
 {
-    public const CITY_FIELDS = ['id', 'name', 'status'];
+    public const CITY_FIELDS = ['id', 'name'];
     public const DRIVER_PROFILE_FIELDS = [
         'id',
         'user_id',

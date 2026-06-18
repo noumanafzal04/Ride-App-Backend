@@ -11,7 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SubscriptionPlanSeeder::class,
             VehicleMakeModelSeeder::class,
-            CitySeeder::class,
+            PunjabCitiesAndDistancesSeeder::class,
         ]);
     }
 }
