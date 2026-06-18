@@ -2,22 +2,28 @@
 
 namespace App\Actions\Ride;
 
+use App\Actions\BaseAction\BaseAction;
 use App\Exceptions\ApiException;
 use App\Models\RideBooking;
-use App\Models\RidePost;
+use App\Repositories\Driver\RidePostRepository;
 use App\Repositories\Ride\BookingRepository;
 use Illuminate\Support\Facades\DB;
 
-class BookingAction
+class BookingAction extends BaseAction
 {
-    public function __construct(protected BookingRepository $repository) {}
+    public function __construct(
+        BookingRepository $repository,
+        protected RidePostRepository $ridePostRepository,
+    ) {
+        parent::__construct($repository, 'ride_booking');
+    }
 
-    /**
-     * Passenger books seats on a ride post.
-     */
-    public function book(int $passengerId, RidePost $ridePost, array $data): RideBooking
+    public function book(int $passengerId, int $ridePostId, array $data): RideBooking
     {
-        return DB::transaction(function () use ($passengerId, $ridePost, $data) {
+        return DB::transaction(function () use ($passengerId, $ridePostId, $data) {
+
+            // fetch via repository — no model in action
+            $ridePost = $this->ridePostRepository->findOrFail($ridePostId);
 
             if ($ridePost->driver_id === $passengerId) {
                 throw new ApiException('You cannot book your own ride.', 422);
@@ -29,23 +35,26 @@ class BookingAction
 
             $seats = (int) $data['seats'];
 
-            // Shared posts track seats; private books the whole vehicle.
-            if ($ridePost->post_type === 'shared'
-                && ($ridePost->available_seats === null || $seats > $ridePost->available_seats)) {
+            if (
+                $ridePost->post_type === 'shared'
+                && ($ridePost->available_seats === null || $seats > $ridePost->available_seats)
+            ) {
                 throw new ApiException('Not enough seats available.', 422);
             }
 
-            // One booking per passenger per post (DB-unique).
-            $exists = RideBooking::where('ride_post_id', $ridePost->id)
-                ->where('passenger_id', $passengerId)
-                ->exists();
+            // duplicate booking check via repository
+            $exists = $this->repository->findOne(
+                callback: fn($q) => $q
+                    ->where('ride_post_id', $ridePostId)
+                    ->where('passenger_id', $passengerId)
+            );
 
             if ($exists) {
                 throw new ApiException('You already have a booking request for this ride.', 422);
             }
 
             return $this->repository->create([
-                'ride_post_id'   => $ridePost->id,
+                'ride_post_id'   => $ridePostId,
                 'passenger_id'   => $passengerId,
                 'seats_booked'   => $seats,
                 'price_per_seat' => $ridePost->price_per_seat,
@@ -56,14 +65,14 @@ class BookingAction
         });
     }
 
-    /**
-     * Bookings made on the authenticated driver's ride posts.
-     */
     public function driverBookings(int $driverId, array $filters = [])
     {
         return $this->repository->paginatedList(
             callback: function ($query) use ($driverId, $filters) {
-                $query->whereHas('ridePost', fn($q) => $q->where('driver_id', $driverId));
+                $query->whereHas(
+                    'ridePost',
+                    fn($q) => $q->where('driver_id', $driverId)
+                );
 
                 if (!empty($filters['status'])) {
                     $query->where('status', $filters['status']);
@@ -80,12 +89,15 @@ class BookingAction
         );
     }
 
-    /**
-     * Driver accepts a pending booking → reserve the seats.
-     */
-    public function accept(int $driverId, RideBooking $booking): RideBooking
+    public function accept(int $driverId, int $bookingId): RideBooking
     {
-        return DB::transaction(function () use ($driverId, $booking) {
+        return DB::transaction(function () use ($driverId, $bookingId) {
+
+            // fetch via repository
+            $booking = $this->repository->findOrFail(
+                $bookingId,
+                relations: ['ridePost']
+            );
 
             $this->guardOwner($driverId, $booking);
 
@@ -93,44 +105,49 @@ class BookingAction
                 throw new ApiException('Only pending bookings can be accepted.', 422);
             }
 
-            $post = RidePost::whereKey($booking->ride_post_id)->lockForUpdate()->first();
+            // lock the ride post row via repository
+            $post = $this->ridePostRepository->findActiveForBooking($booking->ride_post_id);
 
             if ($post->post_type === 'shared') {
                 if ($post->available_seats < $booking->seats_booked) {
                     throw new ApiException('Not enough seats left to accept this booking.', 422);
                 }
-                $post->available_seats -= $booking->seats_booked;
-                if ($post->available_seats <= 0) {
-                    $post->status = 'full';
-                }
+
+                $newSeats = $post->available_seats - $booking->seats_booked;
+
+                $this->ridePostRepository->update($post->id, [
+                    'available_seats' => $newSeats,
+                    'status'          => $newSeats <= 0 ? 'full' : $post->status,
+                ]);
             } else {
-                // Private — the whole vehicle is now booked.
-                $post->status = 'full';
+                $this->ridePostRepository->update($post->id, ['status' => 'full']);
             }
-            $post->save();
 
-            $booking->status = 'accepted';
-            $booking->save();
+            $this->repository->update($booking->id, ['status' => 'accepted']);
 
-            return $booking;
+            return $this->repository->findOrFail($bookingId, relations: ['ridePost']);
         });
     }
 
-    /**
-     * Driver rejects a pending booking.
-     */
-    public function reject(int $driverId, RideBooking $booking): RideBooking
+    public function reject(int $driverId, int $bookingId): RideBooking
     {
-        $this->guardOwner($driverId, $booking);
+        return DB::transaction(function () use ($driverId, $bookingId) {
 
-        if ($booking->status !== 'pending') {
-            throw new ApiException('Only pending bookings can be rejected.', 422);
-        }
+            $booking = $this->repository->findOrFail(
+                $bookingId,
+                relations: ['ridePost']
+            );
 
-        $booking->status = 'rejected';
-        $booking->save();
+            $this->guardOwner($driverId, $booking);
 
-        return $booking;
+            if ($booking->status !== 'pending') {
+                throw new ApiException('Only pending bookings can be rejected.', 422);
+            }
+
+            $this->repository->update($booking->id, ['status' => 'rejected']);
+
+            return $this->repository->findOrFail($bookingId);
+        });
     }
 
     protected function guardOwner(int $driverId, RideBooking $booking): void
