@@ -11,7 +11,9 @@ class CitiesResource extends ApiResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'status' => $this->status,
+            'lat' => $this->lat,
+            'lon' => $this->lon,
+//            'status' => $this->status,
         ];
     }
 }

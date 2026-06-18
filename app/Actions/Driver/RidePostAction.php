@@ -86,6 +86,48 @@ class RidePostAction extends BaseAction
         );
     }
 
+    /**
+     * Rider-facing browse: active, upcoming posts (excluding the viewer's own),
+     * with driver + vehicle + cities. Optional filters: from_city_id, to_city_id, date.
+     */
+    public function browse(int $userId, ?array $filters = [])
+    {
+        return $this->repository->paginatedList(
+            callback: function ($query) use ($userId, $filters) {
+                $query->where('driver_id', '!=', $userId)
+                    ->where('status', 'active')
+                    ->where('departure_at', '>', now())
+                    ->where(function ($q) {
+                        $q->whereNull('available_seats')        // private — whole vehicle
+                            ->orWhere('available_seats', '>', 0); // shared — seats left
+                    });
+
+                if (!empty($filters['from_city_id'])) {
+                    $query->where('from_city_id', $filters['from_city_id']);
+                }
+                if (!empty($filters['to_city_id'])) {
+                    $query->where('to_city_id', $filters['to_city_id']);
+                }
+                if (!empty($filters['date'])) {
+                    $query->whereDate('departure_at', $filters['date']);
+                }
+
+                $query->orderBy('departure_at');
+            },
+            relations: BuildsWithRelations::relations(
+                RidePost::RESOURCE_RELATIONS,
+                [
+                    'driver',
+                    'driver.vehicles',
+                    'driver.vehicles.vehicleModel',
+                    'driver.vehicles.vehicleModel.make',
+                    'fromCity',
+                    'toCity',
+                ]
+            ),
+        );
+    }
+
     public function show($driverId, $id)
     {
         return $this->repository->findOne(

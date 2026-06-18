@@ -26,8 +26,8 @@ class RidePostRequest extends FormRequest
                 'integer',
                 new ModelExistsWithConditions(
                     modelClass: City::class,
-                    conditions: ['status' => true],
-                    message: 'Selected departure city does not exist or is inactive.'
+                    conditions: [],
+                    message: 'Selected departure city does not exist.'
                 ),
             ],
 
@@ -36,8 +36,8 @@ class RidePostRequest extends FormRequest
                 'integer',
                 new ModelExistsWithConditions(
                     modelClass: City::class,
-                    conditions: ['status' => true],
-                    message: 'Selected destination city does not exist or is inactive.'
+                    conditions: [],
+                    message: 'Selected destination city does not exist.'
                 ),
             ],
 
