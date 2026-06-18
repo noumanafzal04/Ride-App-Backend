@@ -10,11 +10,12 @@ class UserProfileResource extends ApiResource
     public function toArray($request): array
     {
         return [
-            'profile_photo' => $this->profile_photo,
-            'date_of_birth' => $this->dob,
+            'profile_image' => $this->profile_image,
+            'dob'           => $this->dob,
             'gender'        => $this->gender,
             'city'          => $this->city,
             'address'       => $this->address,
+            'bio'           => $this->bio,
         ];
     }
 }

@@ -69,11 +69,19 @@ class AuthController extends Controller
 
     public function profile()
     {
+        $user = auth()->user();
+
+        // Always include the basic profile
+        $user->load('profile');
+
+        // Drivers also get their driver profile + vehicles (with model & make)
+        if ($user->isDriver()) {
+            $user->load(['driverProfile', 'vehicles.vehicleModel.make']);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => new UserResource(
-                auth()->user()
-            )
+            'data' => new UserResource($user),
         ]);
     }
 

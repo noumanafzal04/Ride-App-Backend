@@ -4,7 +4,7 @@ namespace App\Constants;
 
 class ResourceFields
 {
-    public const CITY_FIELDS = ['id', 'name', 'status'];
+    public const CITY_FIELDS = ['id', 'name','lat','lon'];
     public const DRIVER_PROFILE_FIELDS = [
         'id',
         'user_id',
@@ -74,7 +74,7 @@ class ResourceFields
         'price_per_seat',
         'luggage_allowed',
         'post_type',
-        'status',
+//        'status',
         'from_address',
         'from_latitude',
         'from_longitude',
