@@ -36,6 +36,7 @@ class RideBookingResource extends ApiResource
             'ride' => $this->whenLoaded('ridePost', fn() => [
                 'id'           => $this->ridePost?->id,
                 'post_type'    => $this->ridePost?->post_type,
+                'status'       => $this->ridePost?->status,
                 'departure_at' => $this->ridePost?->departure_at?->toISOString(),
                 'price_per_seat' => $this->ridePost?->price_per_seat,
                 'from_city'    => $this->ridePost?->relationLoaded('fromCity') ? $this->ridePost->fromCity?->name : null,

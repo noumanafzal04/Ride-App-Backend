@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\Ride\BookSeatRequest;
 use App\Http\Requests\Api\V1\Ride\RateBookingRequest;
 use App\Http\Resources\Api\V1\Ride\RideBookingResource;
 use App\Http\Resources\Api\V1\Ride\RatingResource;
+use App\Http\Resources\Api\V1\Driver\RidePostResource;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -44,13 +45,22 @@ class BookingController extends Controller
             ->message(__("{$this->resourceName}.cancelled"));
     }
 
-    // Either party: mark the booking completed (after departure)
-    public function complete(int $bookingId)
+    // Driver: start the ride → locks it as in_progress
+    public function startRide(int $ridePostId)
     {
-        $booking = $this->action->complete(auth()->id(), $bookingId);
+        $ride = $this->action->startRide(auth()->id(), $ridePostId);
 
-        return (new RideBookingResource($booking))
-            ->message(__("{$this->resourceName}.completed"));
+        return (new RidePostResource($ride))
+            ->message(__("{$this->resourceName}.started"));
+    }
+
+    // Driver: end the ride → completes all accepted bookings + closes the post
+    public function endRide(int $ridePostId)
+    {
+        $ride = $this->action->endRide(auth()->id(), $ridePostId);
+
+        return (new RidePostResource($ride))
+            ->message(__("{$this->resourceName}.ended"));
     }
 
     // Either party: leave an optional review after completion

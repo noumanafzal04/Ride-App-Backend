@@ -74,7 +74,7 @@ class ResourceFields
         'price_per_seat',
         'luggage_allowed',
         'post_type',
-        //        'status',
+        'status',
         'from_address',
         'from_latitude',
         'from_longitude',

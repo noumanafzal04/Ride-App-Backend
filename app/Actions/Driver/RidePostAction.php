@@ -74,6 +74,23 @@ class RidePostAction extends BaseAction
     }
 
     /**
+     * Count browseable posts newer than `after_id` for the rider's current
+     * filters. Powers the app's "new rides available" banner via a cheap COUNT
+     * query, so the full list is only re-fetched when the rider taps it.
+     */
+    public function newCount(int $userId, ?array $filters = []): int
+    {
+        $afterId = (int) ($filters['after_id'] ?? 0);
+
+        // Nothing loaded yet → the banner is irrelevant (the list itself loads).
+        if ($afterId <= 0) {
+            return 0;
+        }
+
+        return $this->repository->newerBrowseableCount($userId, $afterId, $filters);
+    }
+
+    /**
      * Rider-facing browse: active, upcoming posts (excluding the viewer's own),
      * with driver + vehicle + cities. Optional filters: from_city_id, to_city_id, date.
      */

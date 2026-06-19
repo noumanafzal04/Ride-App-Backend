@@ -18,6 +18,7 @@ Route::prefix('v1')->group(function () {
         require __DIR__ . '/api/driver.php';
         require __DIR__ . '/api/vehicle.php';
         require __DIR__ . '/api/ride.php';
+        require __DIR__ . '/api/notification.php';
     });
 });
 

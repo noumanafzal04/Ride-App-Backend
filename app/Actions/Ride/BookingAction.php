@@ -5,10 +5,12 @@ namespace App\Actions\Ride;
 use App\Actions\BaseAction\BaseAction;
 use App\Exceptions\ApiException;
 use App\Models\RideBooking;
+use App\Models\RidePost;
 use App\Repositories\Driver\DriverProfileRepository;
 use App\Repositories\Driver\RidePostRepository;
 use App\Repositories\Ride\BookingRepository;
 use App\Repositories\Ride\RatingRepository;
+use App\Services\Notification\NotificationService;
 use Illuminate\Support\Facades\DB;
 
 class BookingAction extends BaseAction
@@ -18,47 +20,136 @@ class BookingAction extends BaseAction
         protected RidePostRepository $ridePostRepository,
         protected RatingRepository $ratingRepository,
         protected DriverProfileRepository $driverProfileRepository,
+        protected NotificationService $notifications,
     ) {
         parent::__construct($repository, 'ride_booking');
     }
 
     /**
-     * Either party marks the booking completed (after departure time).
+     * Driver starts the ride → locks it as in_progress so riders can no longer
+     * cancel mid-trip. Requires at least one accepted passenger.
      */
-    public function complete(int $userId, int $bookingId): RideBooking
+    public function startRide(int $driverId, int $ridePostId): RidePost
     {
-        return DB::transaction(function () use ($userId, $bookingId) {
+        return DB::transaction(function () use ($driverId, $ridePostId) {
 
-            $booking = $this->repository->findOrFail($bookingId, relations: ['ridePost']);
-            $this->guardParty($userId, $booking);
+            $post = $this->ridePostRepository->findActiveForBooking($ridePostId); // locked
 
-            if ($booking->status !== 'accepted') {
-                throw new ApiException('Only an accepted booking can be completed.', 422);
+            if ($post->driver_id !== $driverId) {
+                throw new ApiException('You do not own this ride.', 403);
             }
 
-            if ($booking->ridePost?->departure_at && $booking->ridePost->departure_at->isFuture()) {
-                throw new ApiException('You can complete the ride after its departure time.', 422);
+            if (!in_array($post->status, ['active', 'full'])) {
+                throw new ApiException('This ride can no longer be started.', 422);
             }
 
-            $this->repository->update($booking->id, ['status' => 'completed']);
-
-            // Count the trip for the driver
-            if ($booking->ridePost) {
-                $this->driverProfileRepository->incrementTripsForUser($booking->ridePost->driver_id);
-            }
-
-            // When no accepted bookings remain, the whole post is done → driver can repost
-            $stillAccepted = $this->repository->findOne(
+            $hasAccepted = $this->repository->findOne(
                 callback: fn($q) => $q
-                    ->where('ride_post_id', $booking->ride_post_id)
+                    ->where('ride_post_id', $ridePostId)
                     ->where('status', 'accepted')
             );
-            if (!$stillAccepted) {
-                $this->ridePostRepository->update($booking->ride_post_id, ['status' => 'completed']);
+
+            if (!$hasAccepted) {
+                throw new ApiException('You have no accepted passengers to start the ride.', 422);
             }
 
-            return $this->repository->findOrFail($bookingId, relations: ['ridePost', 'ratings']);
+            $this->ridePostRepository->update($post->id, ['status' => 'in_progress']);
+
+            // Tell every confirmed rider the ride has begun.
+            $accepted = $this->repository->list(
+                callback: fn($q) => $q
+                    ->where('ride_post_id', $ridePostId)
+                    ->where('status', 'accepted')
+            );
+            foreach ($accepted as $b) {
+                $this->notifications->push(
+                    $b->passenger_id,
+                    'ride_started',
+                    'Ride started',
+                    'Your driver has started the ride. Enjoy your trip!',
+                    ['ride_post_id' => $ridePostId, 'booking_id' => $b->id],
+                );
+            }
+
+            return $this->ridePostRepository->findOrFail($ridePostId);
         });
+    }
+
+    /**
+     * Driver ends the ride in ONE action: every accepted booking is completed
+     * (a trip counted for each), any leftover pending requests are rejected, and
+     * the post is closed regardless of unsold seats. Both parties can then review.
+     */
+    public function endRide(int $driverId, int $ridePostId): RidePost
+    {
+        return DB::transaction(function () use ($driverId, $ridePostId) {
+
+            $post = $this->ridePostRepository->findActiveForBooking($ridePostId); // locked
+
+            if ($post->driver_id !== $driverId) {
+                throw new ApiException('You do not own this ride.', 403);
+            }
+
+            if (in_array($post->status, ['completed', 'cancelled'])) {
+                throw new ApiException('This ride is already closed.', 422);
+            }
+
+            $this->settleRide($post);
+
+            return $this->ridePostRepository->findOrFail($ridePostId);
+        });
+    }
+
+    /**
+     * System safety net: close any ride left open past departure + grace hours,
+     * so a driver who forgets to end a ride is never blocked from posting again.
+     * Returns how many rides were closed.
+     */
+    public function autoCloseStale(int $graceHours = 2): int
+    {
+        $stale = $this->ridePostRepository->staleOpenRides($graceHours);
+
+        foreach ($stale as $post) {
+            DB::transaction(fn() => $this->settleRide($post));
+        }
+
+        return $stale->count();
+    }
+
+    /**
+     * Settle a ride: complete its accepted bookings (count a trip each), reject
+     * any leftover pending requests, and close the post. A ride nobody joined is
+     * marked cancelled rather than completed.
+     */
+    protected function settleRide(RidePost $post): void
+    {
+        $accepted = $this->repository->list(
+            callback: fn($q) => $q
+                ->where('ride_post_id', $post->id)
+                ->where('status', 'accepted')
+        );
+
+        foreach ($accepted as $booking) {
+            $this->repository->update($booking->id, ['status' => 'completed']);
+            $this->driverProfileRepository->incrementTripsForUser($post->driver_id);
+            $this->notifications->push(
+                $booking->passenger_id,
+                'ride_completed',
+                'Ride completed',
+                'Your ride is complete. Please rate your driver.',
+                ['ride_post_id' => $post->id, 'booking_id' => $booking->id],
+            );
+        }
+
+        // Outstanding requests are moot once the ride is over.
+        $this->repository->updateByConditions(
+            ['ride_post_id' => $post->id, 'status' => 'pending'],
+            ['status' => 'rejected']
+        );
+
+        $this->ridePostRepository->update($post->id, [
+            'status' => $accepted->isNotEmpty() ? 'completed' : 'cancelled',
+        ]);
     }
 
     /**
@@ -129,6 +220,19 @@ class BookingAction extends BaseAction
                 throw new ApiException('This ride is no longer available.', 422);
             }
 
+            // A rider may send requests to several drivers at once (so they don't
+            // wait on one who may never accept), but can hold only ONE confirmed
+            // ride. Block only if they already have an accepted booking.
+            $confirmed = $this->repository->findOne(
+                callback: fn($q) => $q
+                    ->where('passenger_id', $passengerId)
+                    ->where('status', 'accepted')
+            );
+
+            if ($confirmed) {
+                throw new ApiException('You already have a confirmed ride. Complete or cancel it before booking another.', 422);
+            }
+
             $seats = (int) $data['seats'];
 
             if (
@@ -138,18 +242,7 @@ class BookingAction extends BaseAction
                 throw new ApiException('Not enough seats available.', 422);
             }
 
-            // duplicate booking check via repository
-            $exists = $this->repository->findOne(
-                callback: fn($q) => $q
-                    ->where('ride_post_id', $ridePostId)
-                    ->where('passenger_id', $passengerId)
-            );
-
-            if ($exists) {
-                throw new ApiException('You already have a booking request for this ride.', 422);
-            }
-
-            return $this->repository->create([
+            $payload = [
                 'ride_post_id'   => $ridePostId,
                 'passenger_id'   => $passengerId,
                 'seats_booked'   => $seats,
@@ -157,7 +250,40 @@ class BookingAction extends BaseAction
                 'total_amount'   => $seats * $ridePost->price_per_seat,
                 'note'           => $data['note'] ?? null,
                 'status'         => 'pending',
-            ]);
+            ];
+
+            // A rider can have only ONE row per ride (unique constraint). If a prior
+            // booking exists, decide based on its status:
+            $exists = $this->repository->findOne(
+                callback: fn($q) => $q
+                    ->where('ride_post_id', $ridePostId)
+                    ->where('passenger_id', $passengerId)
+            );
+
+            if ($exists) {
+                if (in_array($exists->status, ['pending', 'accepted'])) {
+                    throw new ApiException('You already have a booking request for this ride.', 422);
+                }
+                if ($exists->status === 'completed') {
+                    throw new ApiException('You have already taken this ride.', 422);
+                }
+                // Previously cancelled (by rider) or declined (by driver) → let them
+                // send a fresh request by reopening the same row.
+                $this->repository->update($exists->id, $payload);
+                $booking = $this->repository->findOrFail($exists->id);
+            } else {
+                $booking = $this->repository->create($payload);
+            }
+
+            $this->notifications->push(
+                $ridePost->driver_id,
+                'booking_requested',
+                'New booking request',
+                'A rider requested ' . $seats . ' seat' . ($seats > 1 ? 's' : '') . ' on your ride.',
+                ['ride_post_id' => $ridePostId, 'booking_id' => $booking->id],
+            );
+
+            return $booking;
         });
     }
 
@@ -178,7 +304,7 @@ class BookingAction extends BaseAction
             },
             relations: [
                 'passenger:id,first_name,last_name,phone_number',
-                'ridePost:id,driver_id,from_city_id,to_city_id,departure_at,post_type',
+                'ridePost:id,driver_id,from_city_id,to_city_id,departure_at,post_type,status',
                 'ridePost.fromCity:id,name',
                 'ridePost.toCity:id,name',
                 'ratings',
@@ -199,7 +325,7 @@ class BookingAction extends BaseAction
                 $query->latest();
             },
             relations: [
-                'ridePost:id,driver_id,from_city_id,to_city_id,departure_at,post_type,price_per_seat',
+                'ridePost:id,driver_id,from_city_id,to_city_id,departure_at,post_type,price_per_seat,status',
                 'ridePost.driver:id,first_name,last_name,phone_number',
                 'ridePost.fromCity:id,name',
                 'ridePost.toCity:id,name',
@@ -218,25 +344,41 @@ class BookingAction extends BaseAction
                 throw new ApiException('You do not own this booking.', 403);
             }
 
+            // A rider can cancel anytime until the ride is actually completed — the
+            // driver may mark "started" before reaching them, so they must not be
+            // locked in. Only a completed/cancelled/rejected booking can't cancel.
             if (!in_array($booking->status, ['pending', 'accepted'])) {
                 throw new ApiException('This booking can no longer be cancelled.', 422);
             }
 
-            // If it was accepted, release the reserved seats back to the post.
+            // Release the reserved seat. Re-open the post for booking only if it
+            // hadn't started yet (don't downgrade an in-progress ride to active).
             if ($booking->status === 'accepted') {
                 $post = $this->ridePostRepository->findActiveForBooking($booking->ride_post_id);
 
+                $updates = [];
                 if ($post->post_type === 'shared') {
-                    $this->ridePostRepository->update($post->id, [
-                        'available_seats' => ($post->available_seats ?? 0) + $booking->seats_booked,
-                        'status'          => 'active',
-                    ]);
-                } else {
-                    $this->ridePostRepository->update($post->id, ['status' => 'active']);
+                    $updates['available_seats'] = ($post->available_seats ?? 0) + $booking->seats_booked;
+                }
+                if ($post->status === 'full') {
+                    $updates['status'] = 'active';
+                }
+                if (!empty($updates)) {
+                    $this->ridePostRepository->update($post->id, $updates);
                 }
             }
 
             $this->repository->update($booking->id, ['status' => 'cancelled']);
+
+            if ($booking->ridePost) {
+                $this->notifications->push(
+                    $booking->ridePost->driver_id,
+                    'booking_cancelled',
+                    'Booking cancelled',
+                    'A rider cancelled their booking on your ride.',
+                    ['ride_post_id' => $booking->ride_post_id, 'booking_id' => $booking->id],
+                );
+            }
 
             return $this->repository->findOrFail($bookingId, relations: ['ridePost']);
         });
@@ -261,22 +403,84 @@ class BookingAction extends BaseAction
             // lock the ride post row via repository
             $post = $this->ridePostRepository->findActiveForBooking($booking->ride_post_id);
 
+            // Once a ride is full / started / closed it no longer takes bookings.
+            if ($post->status !== 'active') {
+                throw new ApiException('This ride is no longer accepting bookings.', 422);
+            }
+
+            $becameFull = false;
+
             if ($post->post_type === 'shared') {
                 if ($post->available_seats < $booking->seats_booked) {
                     throw new ApiException('Not enough seats left to accept this booking.', 422);
                 }
 
-                $newSeats = $post->available_seats - $booking->seats_booked;
+                $newSeats   = $post->available_seats - $booking->seats_booked;
+                $becameFull = $newSeats <= 0;
 
                 $this->ridePostRepository->update($post->id, [
                     'available_seats' => $newSeats,
-                    'status'          => $newSeats <= 0 ? 'full' : $post->status,
+                    'status'          => $becameFull ? 'full' : $post->status,
                 ]);
             } else {
+                // Private posts book the whole vehicle → full on first accept.
+                $becameFull = true;
                 $this->ridePostRepository->update($post->id, ['status' => 'full']);
             }
 
             $this->repository->update($booking->id, ['status' => 'accepted']);
+
+            $this->notifications->push(
+                $booking->passenger_id,
+                'booking_accepted',
+                'Booking accepted',
+                'Good news — your booking was accepted. Get ready for your ride!',
+                ['ride_post_id' => $post->id, 'booking_id' => $booking->id],
+            );
+
+            // This rider is now confirmed → withdraw their pending requests to
+            // other drivers (they were waiting for whoever accepted first).
+            $otherPendings = $this->repository->list(
+                callback: fn($q) => $q
+                    ->where('passenger_id', $booking->passenger_id)
+                    ->where('status', 'pending')
+                    ->where('id', '!=', $booking->id),
+                relations: ['ridePost'],
+            );
+            foreach ($otherPendings as $op) {
+                $this->repository->update($op->id, ['status' => 'cancelled']);
+                if ($op->ridePost) {
+                    $this->notifications->push(
+                        $op->ridePost->driver_id,
+                        'booking_cancelled',
+                        'Request withdrawn',
+                        'A rider cancelled their request — they booked another ride.',
+                        ['ride_post_id' => $op->ride_post_id, 'booking_id' => $op->id],
+                    );
+                }
+            }
+
+            // No seats remain → decline + notify any other outstanding requests.
+            if ($becameFull) {
+                $others = $this->repository->list(
+                    callback: fn($q) => $q
+                        ->where('ride_post_id', $post->id)
+                        ->where('status', 'pending')
+                );
+                $this->repository->updateByConditions(
+                    ['ride_post_id' => $post->id, 'status' => 'pending'],
+                    ['status' => 'rejected']
+                );
+                foreach ($others as $o) {
+                    $this->notifications->push(
+                        $o->passenger_id,
+                        'booking_rejected',
+                        'Ride full',
+                        'This ride is now full, so your request could not be accepted.',
+                        ['ride_post_id' => $post->id, 'booking_id' => $o->id],
+                    );
+                }
+            }
 
             return $this->repository->findOrFail($bookingId, relations: ['ridePost']);
         });
@@ -298,6 +502,14 @@ class BookingAction extends BaseAction
             }
 
             $this->repository->update($booking->id, ['status' => 'rejected']);
+
+            $this->notifications->push(
+                $booking->passenger_id,
+                'booking_rejected',
+                'Booking declined',
+                'Your booking request was declined by the driver.',
+                ['ride_post_id' => $booking->ride_post_id, 'booking_id' => $booking->id],
+            );
 
             return $this->repository->findOrFail($bookingId);
         });
