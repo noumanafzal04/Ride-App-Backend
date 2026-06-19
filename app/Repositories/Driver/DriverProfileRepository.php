@@ -30,4 +30,14 @@ class DriverProfileRepository extends BaseRepository
     {
         return $this->model->where('user_id', $userId)->exists();
     }
+
+    public function incrementTripsForUser(int $userId): void
+    {
+        $this->model->where('user_id', $userId)->increment('total_trips');
+    }
+
+    public function setRatingAvgForUser(int $userId, float $avg): void
+    {
+        $this->model->where('user_id', $userId)->update(['rating_avg' => $avg]);
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class RideBooking extends Model
 {
@@ -35,5 +36,10 @@ class RideBooking extends Model
     public function passenger(): BelongsTo
     {
         return $this->belongsTo(User::class, 'passenger_id');
+    }
+
+    public function ratings(): MorphMany
+    {
+        return $this->morphMany(Rating::class, 'rateable');
     }
 }

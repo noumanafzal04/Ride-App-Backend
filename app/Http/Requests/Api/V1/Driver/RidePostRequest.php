@@ -51,6 +51,7 @@ class RidePostRequest extends FormRequest
 
             'departure_at'    => [$required, 'date', 'after:now'],
             'price_per_seat'  => [$required, 'numeric', 'min:0'],
+            'available_seats' => ['required_if:post_type,shared', 'nullable', 'integer', 'min:1'],
             'luggage_allowed' => ['nullable', 'boolean'],
             'notes'           => ['nullable', 'string', 'max:1000'],
             'post_type'       => [$required, 'string', 'in:private,shared'],
@@ -82,6 +83,20 @@ class RidePostRequest extends FormRequest
                     $validator->errors()->add(
                         'driver_id',
                         'You already have an active ride post. Complete or cancel it before creating a new one.'
+                    );
+                }
+            }
+
+            // shared: available seats cannot exceed vehicle capacity − 1 (driver's own seat)
+            if ($this->input('post_type') === 'shared') {
+                $vehicle = auth()->user()?->vehicles()->first();
+
+                if (!$vehicle) {
+                    $validator->errors()->add('available_seats', 'Add your vehicle first (complete driver onboarding).');
+                } elseif ((int) $this->input('available_seats') > ($vehicle->seating_capacity - 1)) {
+                    $validator->errors()->add(
+                        'available_seats',
+                        'You can offer at most ' . ($vehicle->seating_capacity - 1) . ' seats (your seat is excluded).'
                     );
                 }
             }

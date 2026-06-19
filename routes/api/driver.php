@@ -12,6 +12,6 @@ Route::prefix('driver')->group(function () {
 
     // bookings received on the driver's posts
     Route::get('bookings', [BookingController::class, 'driverIndex']);
-    Route::post('bookings/{booking}/accept', [BookingController::class, 'accept']);
-    Route::post('bookings/{booking}/reject', [BookingController::class, 'reject']);
+    Route::post('bookings/{bookingId}/accept', [BookingController::class, 'accept']);
+    Route::post('bookings/{bookingId}/reject', [BookingController::class, 'reject']);
 });

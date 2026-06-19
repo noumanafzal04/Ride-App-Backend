@@ -22,4 +22,13 @@ class RideController extends Controller
             ->wrapWith('ride_posts')
             ->message(__("{$this->resourceName}.all"));
     }
+
+    // Rider-facing detail of a single ride post
+    public function show(int $ridePostId)
+    {
+        $ride = $this->action->showForRider($ridePostId);
+
+        return (new RidePostResource($ride))
+            ->message(__("{$this->resourceName}.show"));
+    }
 }

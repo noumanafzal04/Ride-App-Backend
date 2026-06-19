@@ -25,18 +25,10 @@ class RidePostAction extends BaseAction
         $data['driver_id'] = $driverId;
         $data['status']    = 'active';
 
-        if ($data['post_type'] === 'shared') {
-            $vehicle = auth()->user()->vehicles()->first();
-
-            if (!$vehicle) {
-                throw new ApiException('No vehicle found. Please complete driver onboarding first.', 422);
-            }
-
-            $data['available_seats'] = $vehicle->seating_capacity;
-        } else {
-            // private — whole vehicle, seats irrelevant
-            $data['available_seats'] = null;
-        }
+        // Driver chooses available seats for shared (validated ≤ capacity − 1); private = whole vehicle.
+        $data['available_seats'] = $data['post_type'] === 'shared'
+            ? (int) ($data['available_seats'] ?? 1)
+            : null;
 
         return $data;
     }
@@ -49,14 +41,9 @@ class RidePostAction extends BaseAction
             throw new ApiException('You do not own this ride post.', 403);
         }
 
-        // if post_type is being changed, recalculate seats
-        if (isset($data['post_type'])) {
-            if ($data['post_type'] === 'shared') {
-                $vehicle = auth()->user()->vehicles()->first();
-                $data['available_seats'] = $vehicle?->seating_capacity;
-            } else {
-                $data['available_seats'] = null;
-            }
+        // private posts never track seats
+        if (isset($data['post_type']) && $data['post_type'] === 'private') {
+            $data['available_seats'] = null;
         }
 
         return $data;
@@ -100,6 +87,11 @@ class RidePostAction extends BaseAction
                     ->where(function ($q) {
                         $q->whereNull('available_seats')        // private — whole vehicle
                             ->orWhere('available_seats', '>', 0); // shared — seats left
+                    })
+                    // hide rides the rider already has an active booking on
+                    ->whereDoesntHave('bookings', function ($q) use ($userId) {
+                        $q->where('passenger_id', $userId)
+                            ->whereIn('status', ['pending', 'accepted']);
                     });
 
                 if (!empty($filters['from_city_id'])) {
@@ -135,6 +127,27 @@ class RidePostAction extends BaseAction
                 $query->where('id', $id)
                     ->where('driver_id', $driverId);
             },
+            relations: BuildsWithRelations::relations(
+                RidePost::RESOURCE_RELATIONS,
+                [
+                    'driver',
+                    'driver.vehicles',
+                    'driver.vehicles.vehicleModel',
+                    'driver.vehicles.vehicleModel.make',
+                    'fromCity',
+                    'toCity',
+                ]
+            ),
+        );
+    }
+
+    /**
+     * Rider-facing detail of a single ride post (any driver), with driver + vehicle + cities.
+     */
+    public function showForRider($id)
+    {
+        return $this->repository->findOrFail(
+            $id,
             relations: BuildsWithRelations::relations(
                 RidePost::RESOURCE_RELATIONS,
                 [
