@@ -37,7 +37,10 @@
 - **Auth & profiles** — signup/OTP/login/me/logout, driver onboarding, profile update (name + basic info; driver photo locked).
 - **City-to-city ride flow** — post, browse, multi-pending booking, accept/reject, start/end, cancel-anytime-until-completed, re-book after cancel/decline, auto-reject-on-full, auto-close job. All edge cases handled.
 - **Reviews** — per-booking, bidirectional; driver received reviews + aggregates (rating_avg, total_trips, review count); `RideDetail` shows real recent trips + reviews (paginated on scroll) + live current-status stepper + seat-based fare.
-- **In-app notifications** — fired on book/accept/reject/start/end/cancel + ride alerts; compact FB-style screen (time on right, skeleton loading), tab unread badge, tap → deep-link (RideDetail or Review screen).
+- **In-app notifications** — every state change notifies the other party (no silent transitions); compact FB-style screen (time on right, skeleton loading), tab unread badge (live +1 via Reverb), tap → role/type-based deep-link (driver `booking_requested/cancelled` → Booking Requests tab; rider `ride_completed` → Review screen; others → RideDetail). Types: `booking_requested`, `booking_accepted`, `booking_rejected` (incl. "Ride full" + "Request not accepted" on end/auto-close), `booking_cancelled`, `ride_started`, `ride_completed`, `ride_cancelled` (driver cancels post), `ride_alert`, `review_received`, `driver_verified`.
+- **Verified-only posting** — only `verification_status='verified'` drivers can post (`beforeCreate` 403 + PostRide banner/disabled button). Admins verify via the DB; the `driver_verified` notification fires via `DriverProfileObserver` **only on an Eloquent model save** (not a raw query-builder update).
+- **Driver cancel = soft cancel** — cancelling a posted ride cancels its pending/accepted bookings, notifies those riders (`ride_cancelled`), and marks the post `cancelled` (no hard delete).
+- **Profile update** — `POST /auth/profile` (name + basic info; driver photo locked); booking blocked on already-departed rides.
 - **Ride alerts** — "Notify me" toggle (route + optional date) → notifies on matching new post.
 - **Optimizations** — infinite scroll (browse/history/notifications), `ride_bookings` indexes, cities cache, driver requests scoped to active post.
 - **Real-time (Reverb)** — live new posts on browse, live booking status, live notifications; socket-down polling fallback. Reverb installed/configured (port 8090).
@@ -61,10 +64,11 @@ Indexes: `ride_posts(from,to,departure,status)`, `ride_bookings(passenger_id,sta
 `src/screens/{auth,user,driver,notifications,settings}/*`; `src/store/{authStore,userStore}.js`; `src/context/AppContext.jsx`; `src/components/{ReviewSheet,Skeleton,BottomSheet,SelectSheet}.jsx`; `src/config.js`.
 
 ## PENDING / deferred
-- **FCM push** (notifications when app is closed) — needs a Firebase project (`google-services.json` + service-account JSON). Reverb already covers app-open real-time.
-- **Production Reverb** — `wss://` + supervisor + nginx; at scale switch events `ShouldBroadcastNow` → `ShouldBroadcast` + a `queue:work` worker.
-- **Queue the ride-alert fan-out** for very hot routes.
+- **FCM push** (notifications when app is closed) — deferred to last, after other modules; not required for the app to work. Needs a Firebase project (`google-services.json` + service-account JSON). Reverb covers app-open real-time.
+- **Admin UI to verify drivers** — verification is set directly in the DB today (must be an Eloquent model save for the `driver_verified` notification to fire). No in-app admin flow.
+- **Production Reverb** — `wss://` + supervisor + nginx; at scale switch events `ShouldBroadcastNow` → `ShouldBroadcast` + a `queue:work` worker; queue the ride-alert fan-out for hot routes.
 - **EditProfile** — email/phone change + driver photo re-verification flow (currently locked).
+- **No-show** handling; **driver online/offline** toggle UI.
 - **Not tracked / static:** vehicle "Verified" flag, "Completion %" stat.
 - **Out of scope / not built:** Marketplace, Chat, Payments/TopUp, Subscriptions, location/`user_locations`.
 - Optional: per-route Reverb channels; cleanup migration to drop legacy tables.

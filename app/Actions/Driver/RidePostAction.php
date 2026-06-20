@@ -7,11 +7,14 @@ use App\Actions\BaseAction\BaseAction;
 use App\Constants\ResourceFields;
 use App\Exceptions\ApiException;
 use App\Events\RidePostCreated;
+use App\Repositories\Driver\DriverProfileRepository;
 use App\Repositories\Driver\RidePostRepository;
+use App\Repositories\Ride\BookingRepository;
 use App\Repositories\Ride\RideAlertRepository;
 use App\Services\Notification\NotificationService;
 use App\Support\BuildsWithRelations;
 use App\Models\RidePost;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class RidePostAction extends BaseAction
@@ -20,6 +23,8 @@ class RidePostAction extends BaseAction
         RidePostRepository $repository,
         protected RideAlertRepository $alerts,
         protected NotificationService $notifications,
+        protected BookingRepository $bookings,
+        protected DriverProfileRepository $driverProfiles,
     ) {
         parent::__construct($repository, 'ride_post');
     }
@@ -66,6 +71,12 @@ class RidePostAction extends BaseAction
 
     protected function beforeCreate(int $driverId, $data): array
     {
+        // Only verified drivers may post rides.
+        $profile = $this->driverProfiles->forUser($driverId);
+        if (!$profile || $profile->verification_status !== 'verified') {
+            throw new ApiException('Your account is pending verification. You can post rides once verified.', 403);
+        }
+
         $data['driver_id'] = $driverId;
         $data['status']    = 'active';
 
@@ -92,14 +103,47 @@ class RidePostAction extends BaseAction
 
         return $data;
     }
-    protected function beforeDestroy(int $driverId, $id): void
+    /**
+     * Cancelling a posted ride is a SOFT cancel (not a hard delete): cancel any
+     * pending/accepted bookings and notify those riders, then mark the post
+     * cancelled. Preserves history and never silently drops a confirmed rider.
+     */
+    public function destroy($companyId, $id, $options = [])
     {
-        // ownership guard
-        $post = $this->repository->findOrFail($id);
+        return DB::transaction(function () use ($companyId, $id) {
+            $post = $this->repository->findOrFail($id);
 
-        if ($post->driver_id !== $driverId) {
-            throw new ApiException('You do not own this ride post.', 403);
-        }
+            if ($post->driver_id !== $companyId) {
+                throw new ApiException('You do not own this ride post.', 403);
+            }
+            if ($post->status === 'in_progress') {
+                throw new ApiException('A ride in progress can’t be cancelled — end it instead.', 422);
+            }
+            if (in_array($post->status, ['completed', 'cancelled'])) {
+                throw new ApiException('This ride is already closed.', 422);
+            }
+
+            // Cancel + notify active riders
+            $active = $this->bookings->list(
+                callback: fn($q) => $q
+                    ->where('ride_post_id', $id)
+                    ->whereIn('status', ['pending', 'accepted'])
+            );
+            foreach ($active as $b) {
+                $this->bookings->update($b->id, ['status' => 'cancelled']);
+                $this->notifications->push(
+                    $b->passenger_id,
+                    'ride_cancelled',
+                    'Ride cancelled',
+                    'The driver cancelled the ride you booked.',
+                    ['ride_post_id' => $id, 'booking_id' => $b->id],
+                );
+            }
+
+            $this->repository->update($id, ['status' => 'cancelled']);
+
+            return true;
+        });
     }
     // ── overrides using base repo methods ──────────────────
 

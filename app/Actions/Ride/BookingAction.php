@@ -141,11 +141,23 @@ class BookingAction extends BaseAction
             );
         }
 
-        // Outstanding requests are moot once the ride is over.
-        $this->repository->updateByConditions(
-            ['ride_post_id' => $post->id, 'status' => 'pending'],
-            ['status' => 'rejected']
+        // Decline + notify any still-pending requests (never accepted before the
+        // ride ended/auto-closed) — don't leave the rider hanging.
+        $pending = $this->repository->list(
+            callback: fn($q) => $q
+                ->where('ride_post_id', $post->id)
+                ->where('status', 'pending')
         );
+        foreach ($pending as $req) {
+            $this->repository->update($req->id, ['status' => 'rejected']);
+            $this->notifications->push(
+                $req->passenger_id,
+                'booking_rejected',
+                'Request not accepted',
+                'The ride ended before your request was accepted.',
+                ['ride_post_id' => $post->id, 'booking_id' => $req->id],
+            );
+        }
 
         $this->ridePostRepository->update($post->id, [
             'status' => $accepted->isNotEmpty() ? 'completed' : 'cancelled',
@@ -201,6 +213,15 @@ class BookingAction extends BaseAction
                 $this->driverProfileRepository->setRatingAvgForUser($toUserId, $avg);
             }
 
+            // Let the rated person know they got a review.
+            $this->notifications->push(
+                $toUserId,
+                'review_received',
+                'New review',
+                "You received a {$rating->rating}-star review.",
+                ['ride_post_id' => $booking->ride_post_id, 'booking_id' => $booking->id],
+            );
+
             return $rating;
         });
     }
@@ -218,6 +239,10 @@ class BookingAction extends BaseAction
 
             if ($ridePost->status !== 'active') {
                 throw new ApiException('This ride is no longer available.', 422);
+            }
+
+            if ($ridePost->departure_at && $ridePost->departure_at->isPast()) {
+                throw new ApiException('This ride has already departed.', 422);
             }
 
             // A rider may send requests to several drivers at once (so they don't
