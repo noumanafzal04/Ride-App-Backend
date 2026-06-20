@@ -7,12 +7,18 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\DistanceController;
+use App\Http\Controllers\Api\V1\Inspection\InspectionController;
 Route::prefix('v1')->group(function () {
     /**
      * auth route
      * Public
      */
     require __DIR__ . '/api/auth.php';
+
+    // Car inspection — public submit (guests + logged-in; user attached if a token is sent)
+    Route::post('inspection-requests', [InspectionController::class, 'store']);
+    // Public status lookup by tracking code (guests, no auth)
+    Route::get('inspection-requests/track/{token}', [InspectionController::class, 'track']);
 
     Route::middleware('auth:api')->group(function () {
         // Cities
@@ -26,6 +32,7 @@ Route::prefix('v1')->group(function () {
         require __DIR__ . '/api/vehicle.php';
         require __DIR__ . '/api/ride.php';
         require __DIR__ . '/api/notification.php';
+        require __DIR__ . '/api/inspection.php';
     });
 });
 

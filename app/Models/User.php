@@ -22,6 +22,7 @@ class User extends Authenticatable
         'password',
         'user_type',
         'status',
+        'is_admin',
         'phone_verified_at',
         'email_verified_at',
         'last_login_at',
@@ -33,6 +34,7 @@ class User extends Authenticatable
         'user_type'          => UserType::class,
         'status'             => Status::class,
         'password'           => 'hashed',
+        'is_admin'           => 'boolean',
         'phone_verified_at'  => 'datetime',
         'email_verified_at'  => 'datetime',
         'last_login_at'      => 'datetime',
@@ -92,5 +94,10 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === Status::ACTIVE;
+    }
+
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
     }
 }

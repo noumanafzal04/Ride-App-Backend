@@ -19,6 +19,7 @@ class UserResource extends ApiResource
             'email' => $this->email,
             'phone_number' => $this->phone_number,
             'user_type' => $this->user_type,
+            'is_admin' => (bool) $this->is_admin,
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
 
