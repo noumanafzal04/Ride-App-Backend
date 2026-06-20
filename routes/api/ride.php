@@ -2,7 +2,19 @@
 
 use App\Http\Controllers\Api\V1\Ride\RideController;
 use App\Http\Controllers\Api\V1\Ride\BookingController;
+use App\Http\Controllers\Api\V1\Ride\RideAlertController;
+use App\Http\Controllers\Api\V1\Driver\DriverPublicController;
 use Illuminate\Support\Facades\Route;
+
+// Public driver data for the ride-detail screen
+Route::get('drivers/{driverId}/summary', [DriverPublicController::class, 'summary']); // aggregate stats
+Route::get('drivers/{driverId}/reviews', [DriverPublicController::class, 'reviews']); // paginated
+Route::get('drivers/{driverId}/trips', [DriverPublicController::class, 'trips']);     // paginated
+
+// Rider "notify me" alerts (static paths before ride-posts/{id})
+Route::get('ride-alerts', [RideAlertController::class, 'index']);
+Route::post('ride-alerts', [RideAlertController::class, 'store']);
+Route::delete('ride-alerts/{id}', [RideAlertController::class, 'destroy']);
 
 // Rider-facing
 Route::get('ride-posts', [RideController::class, 'index']);                      // browse available rides

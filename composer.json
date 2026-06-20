@@ -10,6 +10,7 @@
         "intervention/image": "^4.1",
         "laravel/framework": "^12.0",
         "laravel/passport": "^13.7",
+        "laravel/reverb": "^1.10",
         "laravel/tinker": "^2.10.1"
     },
     "require-dev": {

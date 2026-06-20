@@ -31,6 +31,11 @@ class DriverProfileRepository extends BaseRepository
         return $this->model->where('user_id', $userId)->exists();
     }
 
+    public function forUser(int $userId): ?DriverProfile
+    {
+        return $this->model->where('user_id', $userId)->first();
+    }
+
     public function incrementTripsForUser(int $userId): void
     {
         $this->model->where('user_id', $userId)->increment('total_trips');

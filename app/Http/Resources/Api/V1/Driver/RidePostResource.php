@@ -45,11 +45,14 @@ class RidePostResource extends ApiResource
                 'last_name'    => $this->driver?->last_name,
                 'phone_number' => $this->driver?->phone_number,
                 'vehicle'      => $this->driver?->vehicles?->first() ? [
-                    'id'                 => $this->driver->vehicles->first()->id,
-                    'color'              => $this->driver->vehicles->first()->color,
-                    'seating_capacity'   => $this->driver->vehicles->first()->seating_capacity,
-                    'vehicle_image_path' => $this->driver->vehicles->first()->vehicle_image_path,
-                    'model'              => $this->driver->vehicles->first()->relationLoaded('vehicleModel') ? [
+                    'id'                  => $this->driver->vehicles->first()->id,
+                    'color'               => $this->driver->vehicles->first()->color,
+                    'seating_capacity'    => $this->driver->vehicles->first()->seating_capacity,
+                    'registration_number' => $this->driver->vehicles->first()->registration_number,
+                    'has_air_conditioner' => (bool) $this->driver->vehicles->first()->has_air_conditioner,
+                    'manufacture_year'    => $this->driver->vehicles->first()->manufacture_year,
+                    'vehicle_image_path'  => $this->driver->vehicles->first()->vehicle_image_path,
+                    'model'               => $this->driver->vehicles->first()->relationLoaded('vehicleModel') ? [
                         'name' => $this->driver->vehicles->first()->vehicleModel?->name,
                         'make' => $this->driver->vehicles->first()->vehicleModel?->make?->name,
                     ] : null,

@@ -35,6 +35,11 @@ Route::prefix('auth')
                 );
 
                 Route::post(
+                    '/profile',
+                    [\App\Http\Controllers\Api\V1\Profile\ProfileController::class, 'update']
+                );
+
+                Route::post(
                     '/logout',
                     [AuthController::class, 'logout']
                 );

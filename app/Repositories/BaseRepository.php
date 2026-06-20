@@ -124,7 +124,7 @@ abstract class BaseRepository
         return $this->model->with($relations)->paginate($limit);
     }
 
-    public function paginateWithFilters(?int $limit = null, array $relations, array $filters = [], array $select = [], array $conditions = [], ?callable $callback = null)
+    public function paginateWithFilters(?int $limit = null, array $relations = [], array $filters = [], array $select = [], array $conditions = [], ?callable $callback = null)
     {
         $limit = $this->resolveLimit($limit);
 

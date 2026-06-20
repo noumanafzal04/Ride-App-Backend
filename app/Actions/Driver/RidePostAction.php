@@ -6,16 +6,60 @@ namespace App\Actions\Driver;
 use App\Actions\BaseAction\BaseAction;
 use App\Constants\ResourceFields;
 use App\Exceptions\ApiException;
+use App\Events\RidePostCreated;
 use App\Repositories\Driver\RidePostRepository;
+use App\Repositories\Ride\RideAlertRepository;
+use App\Services\Notification\NotificationService;
 use App\Support\BuildsWithRelations;
 use App\Models\RidePost;
+use Throwable;
 
 class RidePostAction extends BaseAction
 {
     public function __construct(
         RidePostRepository $repository,
+        protected RideAlertRepository $alerts,
+        protected NotificationService $notifications,
     ) {
         parent::__construct($repository, 'ride_post');
+    }
+
+    /**
+     * After a ride is posted, notify riders whose "notify me" alert matches the
+     * route (and date). Indexed lookup; for very hot routes this would move to a
+     * queued job, but it's fine synchronously at current scale.
+     */
+    protected function afterCreate($created, int $companyId, $data): void
+    {
+        $created->load(['fromCity:id,name', 'toCity:id,name']);
+        $date = $created->departure_at ? $created->departure_at->toDateString() : null;
+
+        // Live: push the new post to everyone browsing (they filter client-side).
+        try {
+            broadcast(new RidePostCreated($created));
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        $matches = $this->alerts->matchingForPost(
+            $created->from_city_id,
+            $created->to_city_id,
+            $date,
+            $created->driver_id,
+        );
+
+        $from = $created->fromCity?->name ?? 'your city';
+        $to   = $created->toCity?->name ?? 'the destination';
+
+        foreach ($matches as $alert) {
+            $this->notifications->push(
+                $alert->user_id,
+                'ride_alert',
+                'Ride available',
+                "A ride from {$from} to {$to} was just posted.",
+                ['ride_post_id' => $created->id],
+            );
+        }
     }
 
     // ── hooks ──────────────────────────────────────────────

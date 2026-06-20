@@ -6,7 +6,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ApiResource extends JsonResource
 {
-    protected string $message = 'Success';
+    protected string $responseMessage = 'Success';
     protected ?int $statusCode = null;
     protected ?string $wrapKey = null; // e.g., 'company', 'service', etc.
     protected array $additionalMeta = []; // Custom meta data
@@ -40,7 +40,7 @@ class ApiResource extends JsonResource
      */
     public function message(string $message): self
     {
-        $this->message = $message;
+        $this->responseMessage = $message;
         return $this;
     }
 
@@ -104,7 +104,7 @@ class ApiResource extends JsonResource
         // Build the full response
         $response = [
             'success' => true,
-            'message' => $this->message,
+            'message' => $this->responseMessage,
             'data' => $dataSection,
             'meta' => [
                 'timestamp' => now()->toISOString(),

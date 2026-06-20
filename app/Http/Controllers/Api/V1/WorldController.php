@@ -6,6 +6,7 @@ use App\Actions\WorldAction;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\CitiesResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class WorldController extends Controller
 {
@@ -17,7 +18,11 @@ class WorldController extends Controller
         $filters = $request->validate([
             'keywords' => ['nullable', 'string', 'max:255'],
         ]);
-        $records = $this->action->list($filters);
+
+        // Cities change rarely but this is hit on every filter/onboarding screen.
+        // Cache per keyword set for 24h (clear with `php artisan cache:clear` after seeding).
+        $cacheKey = 'cities:' . md5(json_encode($filters));
+        $records = Cache::remember($cacheKey, now()->addHours(24), fn() => $this->action->list($filters));
 
         return CitiesResource::collection($records)
             ->wrapWith('cities')

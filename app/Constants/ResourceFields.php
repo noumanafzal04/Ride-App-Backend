@@ -62,7 +62,7 @@ class ResourceFields
 
 
     public const RIDE_POST_DRIVER_FIELDS = ['id', 'first_name', 'last_name', 'phone_number'];
-    public const RIDE_POST_VEHICLE_FIELDS = ['id', 'user_id', 'model_id', 'vehicle_image_path', 'color', 'seating_capacity'];
+    public const RIDE_POST_VEHICLE_FIELDS = ['id', 'user_id', 'model_id', 'vehicle_image_path', 'color', 'seating_capacity', 'registration_number', 'has_air_conditioner', 'manufacture_year'];
 
     public const RIDE_POST_LIST_FIELDS = [
         'id',

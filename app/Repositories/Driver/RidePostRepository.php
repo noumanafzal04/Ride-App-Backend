@@ -55,6 +55,20 @@ class RidePostRepository extends BaseRepository
     }
 
     /**
+     * A driver's completed rides, paginated — powers the "Recent Trips" tab.
+     */
+    public function paginatedCompletedForDriver(int $driverId)
+    {
+        return $this->paginatedList(
+            callback: fn($q) => $q
+                ->where('driver_id', $driverId)
+                ->where('status', 'completed')
+                ->latest('departure_at'),
+            relations: ['fromCity:id,name', 'toCity:id,name'],
+        );
+    }
+
+    /**
      * Rides still open (active/full/in_progress) past their departure time plus
      * a grace period — used by the scheduled auto-close so a driver who forgets
      * to end a ride is never left stuck (one-active-post rule).

@@ -296,6 +296,12 @@ class BookingAction extends BaseAction
                     fn($q) => $q->where('driver_id', $driverId)
                 );
 
+                // Scope to one post (driver's current active ride) so old
+                // declined/cancelled requests from past rides don't clutter it.
+                if (!empty($filters['ride_post_id'])) {
+                    $query->where('ride_post_id', $filters['ride_post_id']);
+                }
+
                 if (!empty($filters['status'])) {
                     $query->where('status', $filters['status']);
                 }

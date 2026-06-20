@@ -23,4 +23,25 @@ class RatingRepository extends BaseRepository
 
         return round((float) $query->avg('rating'), 2);
     }
+
+    // Reviews a driver received from passengers, paginated (latest first).
+    public function paginatedReceivedForDriver(int $driverId)
+    {
+        return $this->paginatedList(
+            callback: fn($q) => $q
+                ->where('to_user_id', $driverId)
+                ->where('rated_as', 'driver')
+                ->latest(),
+            relations: ['fromUser:id,first_name,last_name'],
+        );
+    }
+
+    // How many reviews a driver has received.
+    public function countForDriver(int $driverId): int
+    {
+        return $this->model->newQuery()
+            ->where('to_user_id', $driverId)
+            ->where('rated_as', 'driver')
+            ->count();
+    }
 }

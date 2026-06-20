@@ -2,6 +2,7 @@
 
 namespace App\Services\Notification;
 
+use App\Events\NotificationCreated;
 use App\Repositories\Notification\NotificationRepository;
 use Throwable;
 
@@ -18,13 +19,17 @@ class NotificationService
     public function push(int $userId, string $type, string $title, string $message, array $data = []): void
     {
         try {
-            $this->repository->create([
+            $notification = $this->repository->create([
                 'user_id' => $userId,
                 'type'    => $type,
                 'title'   => $title,
                 'message' => $message,
                 'data'    => $data ?: null,
             ]);
+
+            // Live push over WebSocket so the user's app updates instantly.
+            // Swallowed if Reverb is unreachable — never breaks the calling flow.
+            broadcast(new NotificationCreated($notification));
         } catch (Throwable $e) {
             report($e);
         }

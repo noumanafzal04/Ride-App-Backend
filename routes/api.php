@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\V1\WorldController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\CityController;
@@ -15,6 +17,11 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:api')->group(function () {
         // Cities
         Route::get('cities', [WorldController::class, 'cities']);
+
+        // Reverb private-channel authorization via the Passport token
+        // (Echo authEndpoint → /api/v1/broadcasting/auth)
+        Route::post('broadcasting/auth', fn (Request $request) => Broadcast::auth($request));
+
         require __DIR__ . '/api/driver.php';
         require __DIR__ . '/api/vehicle.php';
         require __DIR__ . '/api/ride.php';
