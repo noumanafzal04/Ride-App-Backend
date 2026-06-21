@@ -21,6 +21,7 @@ class BookingAction extends BaseAction
         protected RatingRepository $ratingRepository,
         protected DriverProfileRepository $driverProfileRepository,
         protected NotificationService $notifications,
+        protected \App\Services\Chat\ChatService $chat,
     ) {
         parent::__construct($repository, 'ride_booking');
     }
@@ -162,6 +163,9 @@ class BookingAction extends BaseAction
         $this->ridePostRepository->update($post->id, [
             'status' => $accepted->isNotEmpty() ? 'completed' : 'cancelled',
         ]);
+
+        // Ride finished → close its conversations (purged 30 days later).
+        $this->chat->closeForRidePost($post->id);
     }
 
     /**
@@ -401,6 +405,9 @@ class BookingAction extends BaseAction
 
             $this->repository->update($booking->id, ['status' => 'cancelled']);
 
+            // Booking gone → close its conversation.
+            $this->chat->closeForBooking($booking->id);
+
             if ($booking->ridePost) {
                 $this->notifications->push(
                     $booking->ridePost->driver_id,
@@ -460,6 +467,9 @@ class BookingAction extends BaseAction
             }
 
             $this->repository->update($booking->id, ['status' => 'accepted']);
+
+            // Confirmed pair → open their chat.
+            $this->chat->openForBooking($booking);
 
             $this->notifications->push(
                 $booking->passenger_id,

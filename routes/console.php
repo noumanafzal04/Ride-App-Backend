@@ -11,3 +11,6 @@ Artisan::command('inspire', function () {
 // Safety net: close rides left open past departure + 2h grace so a driver who
 // forgets to end a ride is never stuck (one-active-post rule).
 Schedule::command('rides:close-stale')->everyTenMinutes();
+
+// Keep the chat tables lean: drop conversations closed > 30 days ago (messages cascade).
+Schedule::command('chat:purge-closed')->daily();

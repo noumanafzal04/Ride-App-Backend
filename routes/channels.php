@@ -6,9 +6,15 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
-// Private per-user channel — booking status changes, notifications, alerts.
+// Private per-user channel — booking status changes, notifications, alerts, chat badge.
 Broadcast::channel('user.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
+});
+
+// Private conversation channel — only the two participants may subscribe.
+Broadcast::channel('conversation.{id}', function ($user, $id) {
+    $conversation = \App\Models\Conversation::find($id);
+    return $conversation && $conversation->isParticipant((int) $user->id);
 });
 
 // Public per-route channel — anyone browsing this route gets new posts live.

@@ -25,6 +25,7 @@ class RidePostAction extends BaseAction
         protected NotificationService $notifications,
         protected BookingRepository $bookings,
         protected DriverProfileRepository $driverProfiles,
+        protected \App\Services\Chat\ChatService $chat,
     ) {
         parent::__construct($repository, 'ride_post');
     }
@@ -141,6 +142,9 @@ class RidePostAction extends BaseAction
             }
 
             $this->repository->update($id, ['status' => 'cancelled']);
+
+            // Ride pulled → close any open conversations on it.
+            $this->chat->closeForRidePost($id);
 
             return true;
         });

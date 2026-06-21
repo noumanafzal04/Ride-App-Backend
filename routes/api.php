@@ -33,6 +33,8 @@ Route::prefix('v1')->group(function () {
         require __DIR__ . '/api/ride.php';
         require __DIR__ . '/api/notification.php';
         require __DIR__ . '/api/inspection.php';
+        require __DIR__ . '/api/chat.php';
+        require __DIR__ . '/api/service.php';
     });
 });
 
