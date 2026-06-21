@@ -8,7 +8,10 @@ class InspectionRequestResource extends ApiResource
 {
     public function toArray($request): array
     {
-        $isAdmin = (bool) ($request->user()?->isAdmin());
+        // Portal admins (AdminUser) always see internal notes; app users never do.
+        $user = $request->user();
+        $isAdmin = $user instanceof \App\Models\AdminUser
+            || (is_object($user) && method_exists($user, 'isAdmin') && $user->isAdmin());
 
         return [
             'id'              => $this->id,

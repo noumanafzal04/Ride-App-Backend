@@ -41,6 +41,18 @@ class DriverProfileRepository extends BaseRepository
         $this->model->where('user_id', $userId)->increment('total_trips');
     }
 
+    /**
+     * Set verification status via an Eloquent model save so DriverProfileObserver
+     * fires the driver_verified notification.
+     */
+    public function updateVerification(\App\Models\DriverProfile $profile, string $status): void
+    {
+        $profile->update([
+            'verification_status' => $status,
+            'verified_at'         => $status === 'verified' ? now() : null,
+        ]);
+    }
+
     public function setRatingAvgForUser(int $userId, float $avg): void
     {
         $this->model->where('user_id', $userId)->update(['rating_avg' => $avg]);

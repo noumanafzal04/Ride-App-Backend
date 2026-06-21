@@ -3,11 +3,26 @@
 namespace App\Observers;
 
 use App\Models\DriverProfile;
+use App\Services\Notification\AdminNotificationService;
 use App\Services\Notification\NotificationService;
 
 class DriverProfileObserver
 {
-    public function __construct(protected NotificationService $notifications) {}
+    public function __construct(
+        protected NotificationService $notifications,
+        protected AdminNotificationService $adminNotifications,
+    ) {}
+
+    /** New driver profile → notify admins to verify. */
+    public function created(DriverProfile $profile): void
+    {
+        $this->adminNotifications->push(
+            'driver_pending',
+            'New driver to verify',
+            'A driver submitted documents for verification.',
+            ['user_id' => $profile->user_id],
+        );
+    }
 
     /**
      * Notify the driver when their account becomes verified.

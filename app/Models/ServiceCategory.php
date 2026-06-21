@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ServiceCategory extends Model
 {
@@ -14,4 +15,14 @@ class ServiceCategory extends Model
         'is_active' => 'boolean',
         'sort'      => 'integer',
     ];
+
+    public function providers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ServiceProvider::class,
+            'service_provider_categories',
+            'category_id',
+            'service_provider_id',
+        );
+    }
 }

@@ -30,8 +30,4 @@ Route::post('service-bookings/{id}/reject', [ServiceBookingController::class, 'r
 Route::post('service-bookings/{id}/start', [ServiceBookingController::class, 'start'])->whereNumber('id');
 Route::post('service-bookings/{id}/complete', [ServiceBookingController::class, 'complete'])->whereNumber('id');
 
-// Admin — approve/manage providers
-Route::prefix('admin')->middleware('admin')->group(function () {
-    Route::get('service-providers', [AdminServiceProviderController::class, 'index']);
-    Route::post('service-providers/{id}/status', [AdminServiceProviderController::class, 'setStatus'])->whereNumber('id');
-});
+// (Admin provider management moved to the Sanctum admin guard — see routes/api/admin.php)

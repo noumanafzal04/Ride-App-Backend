@@ -17,6 +17,11 @@ Broadcast::channel('conversation.{id}', function ($user, $id) {
     return $conversation && $conversation->isParticipant((int) $user->id);
 });
 
+// Shared admin channel — any authenticated admin_user (panel) may subscribe.
+Broadcast::channel('admin', function ($user) {
+    return $user instanceof \App\Models\AdminUser;
+}, ['guards' => ['sanctum']]);
+
 // Public per-route channel — anyone browsing this route gets new posts live.
 // (No auth: only non-sensitive ride summaries are broadcast here.)
 

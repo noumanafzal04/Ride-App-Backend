@@ -10,6 +10,10 @@ class ServiceProviderResource extends ApiResource
     {
         return [
             'id'            => $this->id,
+            'user_id'       => $this->user_id,
+            // True when the authenticated app user owns this listing — so the
+            // app can show "Your listing" and disable booking your own service.
+            'is_mine'       => $request->user() ? (int) $request->user()->id === (int) $this->user_id : false,
             'business_name' => $this->business_name,
             'status'        => $this->status,
             'city'          => $this->whenLoaded('city', fn() => [

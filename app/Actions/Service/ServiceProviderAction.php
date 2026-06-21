@@ -13,6 +13,7 @@ class ServiceProviderAction
     public function __construct(
         protected ServiceProviderRepository $repository,
         protected NotificationService $notifications,
+        protected \App\Services\Notification\AdminNotificationService $adminNotifications,
     ) {}
 
     /** The current user's provider profile (null if not registered). */
@@ -42,6 +43,13 @@ class ServiceProviderAction
             ]);
 
             $this->repository->syncCategories($provider, $data['category_ids']);
+
+            $this->adminNotifications->push(
+                'provider_new',
+                'New service provider',
+                "{$provider->business_name} registered and is awaiting approval.",
+                ['provider_id' => $provider->id],
+            );
 
             return $this->repository->forUser($userId);
         });

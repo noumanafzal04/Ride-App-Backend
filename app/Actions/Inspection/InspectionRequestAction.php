@@ -23,6 +23,7 @@ class InspectionRequestAction extends BaseAction
         protected NotificationService $notifications,
         protected InspectionCategoryRepository $categories,
         protected InspectionCategoryResultRepository $results,
+        protected \App\Services\Notification\AdminNotificationService $adminNotifications,
     ) {
         parent::__construct($repository, 'inspection_request');
     }
@@ -59,6 +60,15 @@ class InspectionRequestAction extends BaseAction
             $created,
             'Request received',
             'We’ve received your car inspection request. Our team will review it and contact you shortly to schedule.',
+        );
+
+        // Notify admins of the new request.
+        $car = trim(($created->car_make ?? '') . ' ' . ($created->car_model ?? ''));
+        $this->adminNotifications->push(
+            'inspection_new',
+            'New inspection request',
+            trim("New car inspection request" . ($car ? " for {$car}" : '') . " from {$created->name}."),
+            ['inspection_request_id' => $created->id],
         );
 
         return $created;

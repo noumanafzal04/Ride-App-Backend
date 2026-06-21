@@ -30,7 +30,7 @@ class InspectionRequestRepository extends BaseRepository
      */
     public function paginatedForAdmin(?string $status = null, ?int $limit = null)
     {
-        return $this->paginatedList(
+        return $this->list(
             callback: function ($q) use ($status) {
                 if ($status) {
                     $q->where('status', $status);
@@ -38,7 +38,6 @@ class InspectionRequestRepository extends BaseRepository
                 $q->latest();
             },
             relations: ['city:id,name', 'user:id,first_name,last_name,phone_number', 'inspector:id,first_name,last_name'],
-            limit: $limit,
         );
     }
 }

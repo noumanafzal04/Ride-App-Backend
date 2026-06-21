@@ -32,6 +32,11 @@ class ServiceBookingAction
                 throw new ApiException('This provider is not available.', 422);
             }
 
+            // A provider cannot book their own service.
+            if ((int) $provider->user_id === (int) $customerId) {
+                throw new ApiException('You cannot book your own service.', 422);
+            }
+
             $booking = $this->repository->create([
                 'customer_id'   => $customerId,
                 'provider_id'   => $providerId,

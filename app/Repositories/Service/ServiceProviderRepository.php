@@ -65,7 +65,7 @@ class ServiceProviderRepository extends BaseRepository
     /** Admin review queue, optional status filter. */
     public function paginatedForAdmin(?string $status = null, ?int $limit = null)
     {
-        return $this->paginatedList(
+        return $this->list(
             callback: function ($q) use ($status) {
                 if ($status) {
                     $q->where('status', $status);
@@ -73,7 +73,6 @@ class ServiceProviderRepository extends BaseRepository
                 $q->latest();
             },
             relations: ['categories:id,name,slug', 'city:id,name', 'user:id,first_name,last_name,phone_number'],
-            limit: $limit,
         );
     }
 }

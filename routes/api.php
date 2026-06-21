@@ -20,6 +20,9 @@ Route::prefix('v1')->group(function () {
     // Public status lookup by tracking code (guests, no auth)
     Route::get('inspection-requests/track/{token}', [InspectionController::class, 'track']);
 
+    // ── Admin panel (separate admin_users via Sanctum + permissions) ──
+    require __DIR__ . '/api/admin.php';
+
     Route::middleware('auth:api')->group(function () {
         // Cities
         Route::get('cities', [WorldController::class, 'cities']);
