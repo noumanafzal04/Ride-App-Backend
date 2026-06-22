@@ -8,7 +8,10 @@ use Throwable;
 
 class NotificationService
 {
-    public function __construct(protected NotificationRepository $repository) {}
+    public function __construct(
+        protected NotificationRepository $repository,
+        protected FcmService $fcm,
+    ) {}
 
     /**
      * Fire-and-forget notification write. A failure here must NEVER break the
@@ -30,6 +33,10 @@ class NotificationService
             // Live push over WebSocket so the user's app updates instantly.
             // Swallowed if Reverb is unreachable — never breaks the calling flow.
             broadcast(new NotificationCreated($notification));
+
+            // Native push (FCM) for closed/backgrounded apps. No-op until the
+            // service-account JSON is present; best-effort, never throws upward.
+            $this->fcm->sendToUser($userId, $type, $title, $message, $data);
         } catch (Throwable $e) {
             report($e);
         }

@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Firebase Cloud Messaging — path to the service-account JSON (Step 3).
+    // Drop the file at storage/app/firebase/service-account.json or set FIREBASE_CREDENTIALS.
+    'fcm' => [
+        'credentials' => env('FIREBASE_CREDENTIALS', storage_path('app/firebase/service-account.json')),
+    ],
+
 ];
