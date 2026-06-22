@@ -47,6 +47,28 @@ class ConversationRepository extends BaseRepository
         return $this->findOne(callback: fn($q) => $q->where('service_booking_id', $serviceBookingId));
     }
 
+    // Find (or create) the buyer↔seller conversation for a listing.
+    public function findOrCreateForListing(int $buyerId, int $sellerId, int $listingId): Conversation
+    {
+        $existing = $this->findOne(callback: fn($q) => $q
+            ->where('car_listing_id', $listingId)
+            ->where(fn($w) => $w
+                ->where(fn($a) => $a->where('driver_id', $sellerId)->where('rider_id', $buyerId))
+                ->orWhere(fn($b) => $b->where('driver_id', $buyerId)->where('rider_id', $sellerId))));
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return $this->create([
+            'type'           => 'listing',
+            'car_listing_id' => $listingId,
+            'driver_id'      => $sellerId,   // seller occupies the "driver" participant slot
+            'rider_id'       => $buyerId,    // buyer occupies the "rider" participant slot
+            'status'         => Conversation::STATUS_OPEN,
+        ]);
+    }
+
     public function closeByServiceBooking(int $serviceBookingId): void
     {
         $this->model->newQuery()

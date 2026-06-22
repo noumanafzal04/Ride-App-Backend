@@ -26,6 +26,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:api')->group(function () {
         // Cities
         Route::get('cities', [WorldController::class, 'cities']);
+        Route::get('cities/nearest', [WorldController::class, 'nearestCity']);
 
         // Reverb private-channel authorization via the Passport token
         // (Echo authEndpoint → /api/v1/broadcasting/auth)
@@ -38,6 +39,7 @@ Route::prefix('v1')->group(function () {
         require __DIR__ . '/api/inspection.php';
         require __DIR__ . '/api/chat.php';
         require __DIR__ . '/api/service.php';
+        require __DIR__ . '/api/marketplace.php';
     });
 });
 

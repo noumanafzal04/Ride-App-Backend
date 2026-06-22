@@ -57,9 +57,9 @@ class ServiceProviderAction
 
     // ─── Public browse ────────────────────────────────────────
 
-    public function browse(?int $categoryId, ?int $cityId)
+    public function browse(?int $categoryId, ?int $cityId, ?float $nearLat = null, ?float $nearLng = null)
     {
-        return $this->repository->paginatedApproved($categoryId, $cityId);
+        return $this->repository->paginatedApproved($categoryId, $cityId, null, $nearLat, $nearLng);
     }
 
     public function showPublic(int $id): ServiceProvider

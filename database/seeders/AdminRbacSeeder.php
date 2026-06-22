@@ -17,6 +17,7 @@ class AdminRbacSeeder extends Seeder
             'users'       => ['view', 'update', 'delete'],   // app users + profile verification
             'inspections' => ['view', 'update', 'delete'],
             'providers'   => ['view', 'update'],             // service-provider verification
+            'listings'    => ['view', 'update'],             // marketplace car listings
             'categories'  => ['view', 'create', 'update', 'delete'],
             'reports'     => ['view'],
             'staff'       => ['view', 'create', 'update', 'delete'], // admin_users
@@ -45,6 +46,7 @@ class AdminRbacSeeder extends Seeder
         $employeeKeys = [
             'inspections.view', 'inspections.update',
             'providers.view', 'providers.update',
+            'listings.view', 'listings.update',
             'categories.view', 'reports.view',
         ];
 

@@ -213,7 +213,27 @@ class RidePostAction extends BaseAction
                     $query->whereDate('departure_at', $filters['date']);
                 }
 
-                $query->orderBy('departure_at');
+                // Location-aware ranking: show ALL rides, but surface those
+                // departing nearest the user first. Only when no city filter is
+                // applied (an explicit from/to keeps the soonest-departure order).
+                $nearLat = $filters['near_lat'] ?? null;
+                $nearLng = $filters['near_lng'] ?? null;
+                $hasCityFilter = !empty($filters['from_city_id']) || !empty($filters['to_city_id']);
+
+                if ($nearLat !== null && $nearLng !== null && !$hasCityFilter) {
+                    $query->select('ride_posts.*')
+                        ->selectRaw(
+                            '( 6371 * acos( least(1, greatest(-1,'
+                            . ' cos(radians(?)) * cos(radians(from_latitude)) * cos(radians(from_longitude) - radians(?))'
+                            . ' + sin(radians(?)) * sin(radians(from_latitude)) ))) ) AS distance_km',
+                            [(float) $nearLat, (float) $nearLng, (float) $nearLat]
+                        )
+                        ->orderByRaw('distance_km IS NULL')  // rides without coords go last
+                        ->orderBy('distance_km')
+                        ->orderBy('departure_at');
+                } else {
+                    $query->orderBy('departure_at');
+                }
             },
             relations: BuildsWithRelations::relations(
                 RidePost::RESOURCE_RELATIONS,

@@ -31,4 +31,10 @@ class WorldAction extends BaseAction
             select: ResourceFields::CITY_FIELDS
         );
     }
+
+    // Resolve a GPS coordinate to the closest known city.
+    public function nearest(float $lat, float $lon)
+    {
+        return $this->repository->nearest($lat, $lon);
+    }
 }

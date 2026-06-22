@@ -36,18 +36,35 @@ class ServiceProviderRepository extends BaseRepository
     }
 
     /** Public browse: approved providers, optional category + city filters. */
-    public function paginatedApproved(?int $categoryId, ?int $cityId, ?int $limit = null)
+    public function paginatedApproved(?int $categoryId, ?int $cityId, ?int $limit = null, ?float $nearLat = null, ?float $nearLng = null)
     {
         return $this->paginatedList(
-            callback: function ($q) use ($categoryId, $cityId) {
-                $q->where('status', ServiceProvider::STATUS_APPROVED);
+            callback: function ($q) use ($categoryId, $cityId, $nearLat, $nearLng) {
+                $q->where('service_providers.status', ServiceProvider::STATUS_APPROVED);
                 if ($categoryId) {
                     $q->whereHas('categories', fn($c) => $c->where('category_id', $categoryId));
                 }
                 if ($cityId) {
-                    $q->where('city_id', $cityId);
+                    $q->where('service_providers.city_id', $cityId);
                 }
-                $q->orderByDesc('rating_avg')->orderByDesc('total_jobs');
+
+                // Location-aware ranking: show ALL providers, nearest city first.
+                // Applied only when there's no explicit city filter.
+                if ($nearLat !== null && $nearLng !== null && !$cityId) {
+                    $q->leftJoin('cities', 'cities.id', '=', 'service_providers.city_id')
+                        ->select('service_providers.*')
+                        ->selectRaw(
+                            '( 6371 * acos( least(1, greatest(-1,'
+                            . ' cos(radians(?)) * cos(radians(cities.lat)) * cos(radians(cities.lon) - radians(?))'
+                            . ' + sin(radians(?)) * sin(radians(cities.lat)) ))) ) AS distance_km',
+                            [$nearLat, $nearLng, $nearLat]
+                        )
+                        ->orderByRaw('distance_km IS NULL')  // providers without a city go last
+                        ->orderBy('distance_km')
+                        ->orderByDesc('service_providers.rating_avg');
+                } else {
+                    $q->orderByDesc('rating_avg')->orderByDesc('total_jobs');
+                }
             },
             relations: ['categories:id,name,slug,icon', 'city:id,name', 'user:id,first_name,last_name'],
             limit: $limit,

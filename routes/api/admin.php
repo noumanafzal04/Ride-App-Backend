@@ -57,6 +57,13 @@ Route::prefix('admin')->group(function () {
         Route::get('service-providers', [AdminServiceProviderController::class, 'index'])->middleware('permission:providers.view');
         Route::post('service-providers/{id}/status', [AdminServiceProviderController::class, 'setStatus'])->whereNumber('id')->middleware('permission:providers.update');
 
+        // Marketplace car listings — review managed sales, price, feature
+        Route::get('car-listings', [\App\Http\Controllers\Api\V1\Marketplace\AdminCarListingController::class, 'index'])->middleware('permission:listings.view');
+        Route::get('car-listings/{id}', [\App\Http\Controllers\Api\V1\Marketplace\AdminCarListingController::class, 'show'])->whereNumber('id')->middleware('permission:listings.view');
+        Route::post('car-listings/{id}/status', [\App\Http\Controllers\Api\V1\Marketplace\AdminCarListingController::class, 'setStatus'])->whereNumber('id')->middleware('permission:listings.update');
+        Route::post('car-listings/{id}/price', [\App\Http\Controllers\Api\V1\Marketplace\AdminCarListingController::class, 'setPrice'])->whereNumber('id')->middleware('permission:listings.update');
+        Route::post('car-listings/{id}/featured', [\App\Http\Controllers\Api\V1\Marketplace\AdminCarListingController::class, 'setFeatured'])->whereNumber('id')->middleware('permission:listings.update');
+
         // Service categories CRUD
         Route::get('service-categories', [ServiceCategoryController::class, 'index'])->middleware('permission:categories.view');
         Route::post('service-categories', [ServiceCategoryController::class, 'store'])->middleware('permission:categories.create');

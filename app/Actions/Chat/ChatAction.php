@@ -5,6 +5,7 @@ namespace App\Actions\Chat;
 use App\Actions\BaseAction\BaseAction;
 use App\Events\MessageSent;
 use App\Exceptions\ApiException;
+use App\Models\CarListing;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Repositories\Chat\ConversationRepository;
@@ -77,6 +78,26 @@ class ChatAction extends BaseAction
             'serviceBooking:id,category_id,provider_id',
             'serviceBooking.category:id,name,icon',
             'serviceBooking.provider:id,business_name',
+        ]);
+    }
+
+    /** Open (or start) a buyer↔seller conversation for a marketplace listing. */
+    public function openForListing(int $userId, int $listingId): Conversation
+    {
+        $listing = CarListing::find($listingId);
+        if (!$listing) {
+            throw new ApiException('Listing not found.', 404);
+        }
+        if ((int) $listing->user_id === (int) $userId) {
+            throw new ApiException('You cannot message your own listing.', 422);
+        }
+
+        $conversation = $this->repository->findOrCreateForListing($userId, (int) $listing->user_id, $listingId);
+
+        return $conversation->load([
+            'driver:id,first_name,last_name',
+            'rider:id,first_name,last_name',
+            'carListing:id,make,model,year,price',
         ]);
     }
 

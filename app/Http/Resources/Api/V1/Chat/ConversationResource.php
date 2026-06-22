@@ -33,6 +33,21 @@ class ConversationResource extends ApiResource
             }
         }
 
+        // Listing context (for marketplace conversations).
+        $listing = null;
+        if ($this->relationLoaded('carListing') && $this->carListing) {
+            $cl = $this->carListing;
+            $title = trim("{$cl->make} {$cl->model}") . ($cl->year ? " {$cl->year}" : '');
+            $listing = [
+                'car_listing_id' => $cl->id,
+                'title'          => $title,
+                'price'          => $cl->price !== null ? (float) $cl->price : null,
+            ];
+            if (!$route) {
+                $route = $title; // inbox subtitle for listing chats
+            }
+        }
+
         // Compact ride summary for the chat banner (route / seats / fare → tap opens RideDetail).
         $ride = null;
         if ($this->relationLoaded('ridePost') && $this->ridePost) {
@@ -52,6 +67,7 @@ class ConversationResource extends ApiResource
             'booking_id'      => $this->booking_id,
             'ride_post_id'    => $this->ride_post_id,
             'service'         => $service,
+            'listing'         => $listing,
             'status'          => $this->status,
             'other_party'     => $other ? [
                 'id'   => $other->id,

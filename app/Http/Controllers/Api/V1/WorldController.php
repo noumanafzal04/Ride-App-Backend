@@ -28,4 +28,17 @@ class WorldController extends Controller
             ->wrapWith('cities')
             ->message(__("cities.all"));
     }
+
+    // Resolve the user's GPS coordinate to the nearest known city.
+    public function nearestCity(Request $request)
+    {
+        $data = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lng' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        $city = $this->action->nearest((float) $data['lat'], (float) $data['lng']);
+
+        return (new CitiesResource($city))->wrapWith('city');
+    }
 }

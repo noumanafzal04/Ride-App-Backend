@@ -72,4 +72,13 @@ class ChatController extends Controller
         return (new ConversationResource($conversation))
             ->message('Conversation.');
     }
+
+    /** Open (or start) the buyer↔seller conversation for a car listing. */
+    public function showForListing(int $listingId)
+    {
+        $conversation = $this->action->openForListing(auth()->id(), $listingId);
+
+        return (new ConversationResource($conversation))
+            ->message('Conversation.');
+    }
 }

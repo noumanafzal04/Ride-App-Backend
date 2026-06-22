@@ -13,12 +13,14 @@ class ServiceProviderController extends Controller
 {
     public function __construct(protected ServiceProviderAction $action) {}
 
-    /** Browse approved providers (?category_id=&city_id=). */
+    /** Browse approved providers (?category_id=&city_id=&near_lat=&near_lng=). */
     public function index(Request $request)
     {
         $items = $this->action->browse(
             $request->query('category_id') ? (int) $request->query('category_id') : null,
             $request->query('city_id') ? (int) $request->query('city_id') : null,
+            $request->filled('near_lat') ? (float) $request->query('near_lat') : null,
+            $request->filled('near_lng') ? (float) $request->query('near_lng') : null,
         );
 
         return ServiceProviderResource::collection($items)

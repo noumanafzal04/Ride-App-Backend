@@ -21,6 +21,7 @@ class Conversation extends Model
         'booking_id',
         'ride_post_id',
         'service_booking_id',
+        'car_listing_id',
         'driver_id',
         'rider_id',
         'status',
@@ -66,6 +67,11 @@ class Conversation extends Model
     public function serviceBooking(): BelongsTo
     {
         return $this->belongsTo(ServiceBooking::class, 'service_booking_id');
+    }
+
+    public function carListing(): BelongsTo
+    {
+        return $this->belongsTo(CarListing::class, 'car_listing_id');
     }
 
     public function isParticipant(int $userId): bool
