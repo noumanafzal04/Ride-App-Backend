@@ -40,6 +40,8 @@ Route::prefix('v1')->group(function () {
         require __DIR__ . '/api/chat.php';
         require __DIR__ . '/api/service.php';
         require __DIR__ . '/api/marketplace.php';
+        require __DIR__ . '/api/subscription.php';
+        require __DIR__ . '/api/rental.php';
     });
 });
 

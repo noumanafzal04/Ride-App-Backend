@@ -14,7 +14,7 @@ class AdminCarListingController extends Controller
     // ?status=&type=
     public function index(Request $request)
     {
-        $items = $this->action->adminList($request->query('status'), $request->query('type'));
+        $items = $this->action->adminList($request->query('status'), $request->query('type'), (int) $request->query('per_page', 15));
 
         return CarListingResource::collection($items)
             ->wrapWith('listings')

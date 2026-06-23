@@ -69,6 +69,23 @@ class ConversationRepository extends BaseRepository
         ]);
     }
 
+    // Find (or create) the buyer↔owner conversation for a rental booking.
+    public function findOrCreateForRentalBooking(int $bookingId, int $ownerId, int $customerId): Conversation
+    {
+        $existing = $this->findOne(callback: fn($q) => $q->where('rental_booking_id', $bookingId));
+        if ($existing) {
+            return $existing;
+        }
+
+        return $this->create([
+            'type'              => 'rental',
+            'rental_booking_id' => $bookingId,
+            'driver_id'         => $ownerId,    // owner in the "driver" participant slot
+            'rider_id'          => $customerId, // customer in the "rider" slot
+            'status'            => Conversation::STATUS_OPEN,
+        ]);
+    }
+
     public function closeByServiceBooking(int $serviceBookingId): void
     {
         $this->model->newQuery()

@@ -15,7 +15,7 @@ class AppUserRepository extends BaseRepository
     /** App users (riders/drivers) for the admin list. Optional type + verification filters. */
     public function paginatedForAdmin(array $filters = [], ?int $limit = null)
     {
-        return $this->list(
+        return $this->paginatedList(
             callback: function ($q) use ($filters) {
                 if (!empty($filters['user_type'])) {
                     $q->where('user_type', $filters['user_type']);
@@ -33,6 +33,7 @@ class AppUserRepository extends BaseRepository
                 $q->latest();
             },
             relations: ['driverProfile:id,user_id,verification_status,rating_avg,total_trips'],
+            limit: $limit,
         );
     }
 

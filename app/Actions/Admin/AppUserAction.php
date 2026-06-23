@@ -17,9 +17,9 @@ class AppUserAction
         protected NotificationService $notifications,
     ) {}
 
-    public function list(array $filters = [])
+    public function list(array $filters = [], ?int $perPage = null)
     {
-        return $this->repository->paginatedForAdmin($filters);
+        return $this->repository->paginatedForAdmin($filters, $perPage);
     }
 
     public function show(int $id): User

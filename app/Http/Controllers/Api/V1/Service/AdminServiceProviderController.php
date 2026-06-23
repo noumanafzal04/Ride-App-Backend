@@ -14,7 +14,7 @@ class AdminServiceProviderController extends Controller
 
     public function index(Request $request)
     {
-        $items = $this->action->adminList($request->query('status'));
+        $items = $this->action->adminList($request->query('status'), (int) $request->query('per_page', 15));
 
         return ServiceProviderResource::collection($items)
             ->wrapWith('providers')

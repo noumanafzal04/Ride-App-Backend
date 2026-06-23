@@ -18,6 +18,8 @@ class AdminRbacSeeder extends Seeder
             'inspections' => ['view', 'update', 'delete'],
             'providers'   => ['view', 'update'],             // service-provider verification
             'listings'    => ['view', 'update'],             // marketplace car listings
+            'rentals'     => ['view', 'update'],             // rent-a-car management
+            'billing'     => ['view', 'update'],             // subscription plans + billing settings
             'categories'  => ['view', 'create', 'update', 'delete'],
             'reports'     => ['view'],
             'staff'       => ['view', 'create', 'update', 'delete'], // admin_users

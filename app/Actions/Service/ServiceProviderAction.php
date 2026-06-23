@@ -14,7 +14,21 @@ class ServiceProviderAction
         protected ServiceProviderRepository $repository,
         protected NotificationService $notifications,
         protected \App\Services\Notification\AdminNotificationService $adminNotifications,
+        protected \App\Services\Billing\BillingService $billing,
     ) {}
+
+    // Free tier allows N categories; more requires an active service plan.
+    // No-op while billing is disabled for the service module.
+    protected function assertCategoryLimit(int $userId, array $categoryIds): void
+    {
+        $cfg = $this->billing->settings(\App\Constants\BillingModule::SERVICE);
+        if (!$cfg->enforcement_enabled) {
+            return;
+        }
+        if (count($categoryIds) > $cfg->free_limit && !$this->billing->activeSubscription($userId, \App\Constants\BillingModule::SERVICE)) {
+            throw new ApiException("Your free plan allows {$cfg->free_limit} categories. Subscribe to offer more.", 402);
+        }
+    }
 
     /** The current user's provider profile (null if not registered). */
     public function forUser(int $userId): ?ServiceProvider
@@ -31,6 +45,8 @@ class ServiceProviderAction
             if ($this->repository->forUser($userId)) {
                 throw new ApiException('You are already registered as a service provider.', 422);
             }
+
+            $this->assertCategoryLimit($userId, $data['category_ids'] ?? []);
 
             $provider = $this->repository->create([
                 'user_id'       => $userId,
@@ -75,9 +91,9 @@ class ServiceProviderAction
 
     // ─── Admin ────────────────────────────────────────────────
 
-    public function adminList(?string $status = null)
+    public function adminList(?string $status = null, ?int $perPage = null)
     {
-        return $this->repository->paginatedForAdmin($status);
+        return $this->repository->paginatedForAdmin($status, $perPage);
     }
 
     public function setStatus(int $id, string $status): ServiceProvider

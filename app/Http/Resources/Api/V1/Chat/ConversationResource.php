@@ -48,6 +48,18 @@ class ConversationResource extends ApiResource
             }
         }
 
+        // Rental context (for rent-a-car conversations).
+        $rental = null;
+        if ($this->relationLoaded('rentalBooking') && $this->rentalBooking) {
+            $rb = $this->rentalBooking;
+            $car = $rb->rentalCar;
+            $title = $car ? trim("{$car->make} {$car->model}") . ($car->year ? " {$car->year}" : '') : 'Rental';
+            $rental = ['rental_booking_id' => $rb->id, 'title' => $title];
+            if (!$route) {
+                $route = $title; // inbox subtitle for rental chats
+            }
+        }
+
         // Compact ride summary for the chat banner (route / seats / fare → tap opens RideDetail).
         $ride = null;
         if ($this->relationLoaded('ridePost') && $this->ridePost) {
@@ -68,6 +80,7 @@ class ConversationResource extends ApiResource
             'ride_post_id'    => $this->ride_post_id,
             'service'         => $service,
             'listing'         => $listing,
+            'rental'          => $rental,
             'status'          => $this->status,
             'other_party'     => $other ? [
                 'id'   => $other->id,

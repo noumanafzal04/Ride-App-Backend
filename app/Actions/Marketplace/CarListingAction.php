@@ -18,6 +18,7 @@ class CarListingAction
         protected ImageUploadService $images,
         protected AdminNotificationService $adminNotifications,
         protected NotificationService $notifications,
+        protected \App\Services\Billing\BillingService $billing,
     ) {}
 
     public function browse(array $filters, ?float $nearLat = null, ?float $nearLng = null)
@@ -42,7 +43,10 @@ class CarListingAction
 
     public function create(int $userId, array $data, array $imageFiles = []): CarListing
     {
-        return DB::transaction(function () use ($userId, $data, $imageFiles) {
+        // Subscription gate (free while billing is disabled for buy/sell).
+        $gate = $this->billing->assertCanPost($userId, \App\Constants\BillingModule::BUYSELL);
+
+        return DB::transaction(function () use ($userId, $data, $imageFiles, $gate) {
             $type = ($data['listing_type'] ?? CarListing::TYPE_SELF) === CarListing::TYPE_MANAGED
                 ? CarListing::TYPE_MANAGED : CarListing::TYPE_SELF;
 
@@ -91,6 +95,8 @@ class CarListingAction
                 );
             }
 
+            $this->billing->consume($userId, \App\Constants\BillingModule::BUYSELL, $gate);
+
             return $this->repository->findByIdWithRelations($listing->id);
         });
     }
@@ -133,9 +139,9 @@ class CarListingAction
 
     // ─── Admin (portal) ───────────────────────────────────────────────
 
-    public function adminList(?string $status = null, ?string $type = null)
+    public function adminList(?string $status = null, ?string $type = null, ?int $perPage = null)
     {
-        return $this->repository->adminPaginated($status, $type);
+        return $this->repository->adminPaginated($status, $type, $perPage);
     }
 
     public function adminFind(int $id): CarListing

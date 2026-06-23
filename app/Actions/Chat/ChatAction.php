@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Models\CarListing;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\RentalBooking;
 use App\Repositories\Chat\ConversationRepository;
 use App\Repositories\Chat\MessageRepository;
 use Illuminate\Support\Facades\DB;
@@ -98,6 +99,27 @@ class ChatAction extends BaseAction
             'driver:id,first_name,last_name',
             'rider:id,first_name,last_name',
             'carListing:id,make,model,year,price',
+        ]);
+    }
+
+    /** Open (or start) the customer↔owner conversation for a rental booking. */
+    public function openForRentalBooking(int $userId, int $bookingId): Conversation
+    {
+        $booking = RentalBooking::find($bookingId);
+        if (!$booking) {
+            throw new ApiException('Rental booking not found.', 404);
+        }
+        if (!in_array((int) $userId, [(int) $booking->customer_id, (int) $booking->owner_id], true)) {
+            throw new ApiException('You are not part of this booking.', 403);
+        }
+
+        $conversation = $this->repository->findOrCreateForRentalBooking($bookingId, (int) $booking->owner_id, (int) $booking->customer_id);
+
+        return $conversation->load([
+            'driver:id,first_name,last_name',
+            'rider:id,first_name,last_name',
+            'rentalBooking:id,rental_car_id,start_date,end_date',
+            'rentalBooking.rentalCar:id,make,model,year',
         ]);
     }
 

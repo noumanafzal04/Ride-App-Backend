@@ -19,6 +19,8 @@ use Throwable;
 
 class RidePostAction extends BaseAction
 {
+    protected ?array $rideGate = null;
+
     public function __construct(
         RidePostRepository $repository,
         protected RideAlertRepository $alerts,
@@ -26,6 +28,7 @@ class RidePostAction extends BaseAction
         protected BookingRepository $bookings,
         protected DriverProfileRepository $driverProfiles,
         protected \App\Services\Chat\ChatService $chat,
+        protected \App\Services\Billing\BillingService $billing,
     ) {
         parent::__construct($repository, 'ride_post');
     }
@@ -37,6 +40,9 @@ class RidePostAction extends BaseAction
      */
     protected function afterCreate($created, int $companyId, $data): void
     {
+        // Consume one post against the active plan (no-op when the post was free).
+        $this->billing->consume($created->driver_id, \App\Constants\BillingModule::RIDE, $this->rideGate);
+
         $created->load(['fromCity:id,name', 'toCity:id,name']);
         $date = $created->departure_at ? $created->departure_at->toDateString() : null;
 
@@ -77,6 +83,9 @@ class RidePostAction extends BaseAction
         if (!$profile || $profile->verification_status !== 'verified') {
             throw new ApiException('Your account is pending verification. You can post rides once verified.', 403);
         }
+
+        // Subscription gate (free while billing is disabled for rides).
+        $this->rideGate = $this->billing->assertCanPost($driverId, \App\Constants\BillingModule::RIDE);
 
         $data['driver_id'] = $driverId;
         $data['status']    = 'active';

@@ -87,7 +87,7 @@ class CarListingRepository extends BaseRepository
     }
 
     // Admin queue — optional status + listing_type filters, newest first.
-    public function adminPaginated(?string $status = null, ?string $type = null)
+    public function adminPaginated(?string $status = null, ?string $type = null, ?int $limit = null)
     {
         return $this->paginatedList(
             callback: function ($q) use ($status, $type) {
@@ -96,6 +96,7 @@ class CarListingRepository extends BaseRepository
                 $q->latest();
             },
             relations: $this->browseRelations,
+            limit: $limit,
         );
     }
 

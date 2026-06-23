@@ -64,6 +64,23 @@ Route::prefix('admin')->group(function () {
         Route::post('car-listings/{id}/price', [\App\Http\Controllers\Api\V1\Marketplace\AdminCarListingController::class, 'setPrice'])->whereNumber('id')->middleware('permission:listings.update');
         Route::post('car-listings/{id}/featured', [\App\Http\Controllers\Api\V1\Marketplace\AdminCarListingController::class, 'setFeatured'])->whereNumber('id')->middleware('permission:listings.update');
 
+        // Rent a Car — review managed rentals, price, feature
+        Route::get('rentals', [\App\Http\Controllers\Api\V1\Rental\AdminRentalController::class, 'index'])->middleware('permission:rentals.view');
+        Route::get('rentals/{id}', [\App\Http\Controllers\Api\V1\Rental\AdminRentalController::class, 'show'])->whereNumber('id')->middleware('permission:rentals.view');
+        Route::post('rentals/{id}/status', [\App\Http\Controllers\Api\V1\Rental\AdminRentalController::class, 'setStatus'])->whereNumber('id')->middleware('permission:rentals.update');
+        Route::post('rentals/{id}/price', [\App\Http\Controllers\Api\V1\Rental\AdminRentalController::class, 'setPrice'])->whereNumber('id')->middleware('permission:rentals.update');
+        Route::post('rentals/{id}/featured', [\App\Http\Controllers\Api\V1\Rental\AdminRentalController::class, 'setFeatured'])->whereNumber('id')->middleware('permission:rentals.update');
+
+        // Billing — subscription plans, module settings, subscriptions
+        Route::get('billing/plans', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'plans'])->middleware('permission:billing.view');
+        Route::post('billing/plans', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'storePlan'])->middleware('permission:billing.update');
+        Route::put('billing/plans/{id}', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'updatePlan'])->whereNumber('id')->middleware('permission:billing.update');
+        Route::delete('billing/plans/{id}', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'destroyPlan'])->whereNumber('id')->middleware('permission:billing.update');
+        Route::get('billing/settings', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'settings'])->middleware('permission:billing.view');
+        Route::put('billing/settings/{module}', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'updateSetting'])->middleware('permission:billing.update');
+        Route::get('billing/subscriptions', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'subscriptions'])->middleware('permission:billing.view');
+        Route::post('billing/subscriptions/grant', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'grant'])->middleware('permission:billing.update');
+
         // Service categories CRUD
         Route::get('service-categories', [ServiceCategoryController::class, 'index'])->middleware('permission:categories.view');
         Route::post('service-categories', [ServiceCategoryController::class, 'store'])->middleware('permission:categories.create');

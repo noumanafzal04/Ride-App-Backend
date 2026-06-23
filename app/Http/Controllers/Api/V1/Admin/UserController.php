@@ -15,9 +15,14 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $items = $this->action->list($request->only(['user_type', 'verification', 'search']));
+        $items = $this->action->list(
+            $request->only(['user_type', 'verification', 'search']),
+            (int) $request->query('per_page', 15),
+        );
 
-        return ApiResponse::success(AppUserResource::collection($items), 'Users.');
+        return AppUserResource::collection($items)
+            ->wrapWith('users')
+            ->message('Users.');
     }
 
     public function show(int $id)
