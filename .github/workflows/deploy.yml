@@ -1,0 +1,36 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/backend
+            git config --global --add safe.directory /var/www/backend
+            git pull origin main
+            composer install --no-dev --optimize-autoloader
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan queue:restart
+            supervisorctl restart worker
+            chown -R www-data:www-data /var/www/backend
+            chmod -R 775 /var/www/backend/storage
+            chmod 660 /var/www/backend/storage/oauth-private.key
+            chmod 660 /var/www/backend/storage/oauth-public.key
+            chown www-data:www-data /var/www/backend/storage/oauth-private.key
+            chown www-data:www-data /var/www/backend/storage/oauth-public.key
+            echo "Deployed successfully!"
