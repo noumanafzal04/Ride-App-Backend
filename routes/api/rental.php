@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 // Rent a Car (auth:api — required by parent group)
 Route::get('rentals', [RentalCarController::class, 'index']);                 // browse + filters + near
+Route::get('rentals/models', [RentalCarController::class, 'models']);         // distinct make/model list for filter
 Route::get('rentals/mine', [RentalCarController::class, 'mine']);             // my rental cars
 Route::get('rentals/bookings/mine', [RentalBookingController::class, 'mine']);        // my rental bookings (as customer)
 Route::get('rentals/bookings/owner', [RentalBookingController::class, 'ownerBookings']); // bookings on my cars
@@ -18,5 +19,6 @@ Route::delete('rentals/{id}', [RentalCarController::class, 'destroy'])->whereNum
 // Bookings
 Route::post('rentals/{rentalId}/book', [RentalBookingController::class, 'store'])->whereNumber('rentalId');
 Route::patch('rentals/bookings/{id}/cancel', [RentalBookingController::class, 'cancel'])->whereNumber('id');
+Route::post('rentals/bookings/{id}/rate', [RentalBookingController::class, 'rate'])->whereNumber('id');
 Route::patch('rentals/bookings/{id}/{action}', [RentalBookingController::class, 'action'])
     ->whereNumber('id')->whereIn('action', ['accept', 'reject', 'start', 'complete']);

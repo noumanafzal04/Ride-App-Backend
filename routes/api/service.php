@@ -16,6 +16,7 @@ Route::post('service-provider', [ServiceProviderController::class, 'store']);
 // Browse approved providers
 Route::get('service-providers', [ServiceProviderController::class, 'index']);
 Route::get('service-providers/{id}', [ServiceProviderController::class, 'show'])->whereNumber('id');
+Route::get('service-providers/{id}/reviews', [ServiceProviderController::class, 'reviews'])->whereNumber('id');
 
 // Service bookings — customer
 Route::post('service-providers/{providerId}/bookings', [ServiceBookingController::class, 'store'])->whereNumber('providerId');

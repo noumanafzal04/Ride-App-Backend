@@ -41,4 +41,13 @@ class RentalBookingController extends Controller
     {
         return (new RentalBookingResource($this->action->ownerAction(auth()->id(), $id, $action)))->wrapWith('booking')->message('Updated.');
     }
+
+    public function rate(Request $request, int $id)
+    {
+        $data = $request->validate([
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'review' => ['nullable', 'string', 'max:1000'],
+        ]);
+        return (new RentalBookingResource($this->action->rate(auth()->id(), $id, $data)))->wrapWith('booking')->message('Thanks for your review.');
+    }
 }

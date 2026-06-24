@@ -15,13 +15,22 @@ class RentalCarController extends Controller
 
     public function index(Request $request)
     {
-        $filters = $request->only(['q', 'category', 'city_id', 'rental_type', 'transmission', 'price_max', 'sort']);
+        $filters = $request->only([
+            'q', 'category', 'city_id', 'rental_type', 'transmission',
+            'price_min', 'price_max', 'rating_min', 'make', 'model', 'sort',
+        ]);
         $items = $this->action->browse(
             array_filter($filters, fn($v) => $v !== null && $v !== ''),
             $request->filled('near_lat') ? (float) $request->query('near_lat') : null,
             $request->filled('near_lng') ? (float) $request->query('near_lng') : null,
         );
         return RentalCarResource::collection($items)->wrapWith('rentals')->message('Rental cars.');
+    }
+
+    /** Distinct make/model list for the "specific model" filter. */
+    public function models()
+    {
+        return ApiResponse::success(['models' => $this->action->models()], 'Available models.');
     }
 
     public function mine()

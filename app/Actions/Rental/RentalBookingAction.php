@@ -17,7 +17,44 @@ class RentalBookingAction
         protected RentalBookingRepository $repository,
         protected RentalCarRepository $cars,
         protected NotificationService $notifications,
+        protected \App\Repositories\Ride\RatingRepository $ratings,
     ) {}
+
+    /** Customer reviews the owner after a completed rental. */
+    public function rate(int $customerId, int $bookingId, array $data): RentalBooking
+    {
+        return DB::transaction(function () use ($customerId, $bookingId, $data) {
+            $booking = $this->repository->findOrFail($bookingId);
+
+            if ((int) $booking->customer_id !== (int) $customerId) {
+                throw new ApiException('You do not own this booking.', 403);
+            }
+            if ($booking->status !== RentalBooking::STATUS_COMPLETED) {
+                throw new ApiException('You can review only after the rental is completed.', 422);
+            }
+
+            $already = $this->ratings->findOne(callback: fn($q) => $q
+                ->where('rateable_type', RentalBooking::class)
+                ->where('rateable_id', $booking->id)
+                ->where('from_user_id', $customerId));
+            if ($already) {
+                throw new ApiException('You have already reviewed this rental.', 422);
+            }
+
+            $this->ratings->create([
+                'type'          => 'rental',
+                'rateable_type' => RentalBooking::class,
+                'rateable_id'   => $booking->id,
+                'from_user_id'  => $customerId,
+                'to_user_id'    => $booking->owner_id,
+                'rated_as'      => 'owner',
+                'rating'        => (int) $data['rating'],
+                'review'        => $data['review'] ?? null,
+            ]);
+
+            return $this->repository->findOrFail($bookingId);
+        });
+    }
 
     public function request(int $customerId, int $rentalId, array $data): RentalBooking
     {

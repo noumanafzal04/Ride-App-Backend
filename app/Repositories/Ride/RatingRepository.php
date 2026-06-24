@@ -44,4 +44,16 @@ class RatingRepository extends BaseRepository
             ->where('rated_as', 'driver')
             ->count();
     }
+
+    // Reviews a service provider received from customers, paginated (latest first).
+    public function paginatedReceivedForProvider(int $providerUserId)
+    {
+        return $this->paginatedList(
+            callback: fn($q) => $q
+                ->where('to_user_id', $providerUserId)
+                ->where('rated_as', 'provider')
+                ->latest(),
+            relations: ['fromUser:id,first_name,last_name'],
+        );
+    }
 }

@@ -339,6 +339,7 @@ class BookingAction extends BaseAction
             },
             relations: [
                 'passenger:id,first_name,last_name,phone_number',
+                'passenger.profile:id,user_id,profile_image',
                 'ridePost:id,driver_id,from_city_id,to_city_id,departure_at,post_type,status',
                 'ridePost.fromCity:id,name',
                 'ridePost.toCity:id,name',

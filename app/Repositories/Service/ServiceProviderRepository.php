@@ -35,17 +35,23 @@ class ServiceProviderRepository extends BaseRepository
         );
     }
 
-    /** Public browse: approved providers, optional category + city filters. */
-    public function paginatedApproved(?int $categoryId, ?int $cityId, ?int $limit = null, ?float $nearLat = null, ?float $nearLng = null)
+    /** Public browse: approved providers, optional category + city + search filters. */
+    public function paginatedApproved(?int $categoryId, ?int $cityId, ?int $limit = null, ?float $nearLat = null, ?float $nearLng = null, ?string $search = null)
     {
         return $this->paginatedList(
-            callback: function ($q) use ($categoryId, $cityId, $nearLat, $nearLng) {
+            callback: function ($q) use ($categoryId, $cityId, $nearLat, $nearLng, $search) {
                 $q->where('service_providers.status', ServiceProvider::STATUS_APPROVED);
                 if ($categoryId) {
                     $q->whereHas('categories', fn($c) => $c->where('category_id', $categoryId));
                 }
                 if ($cityId) {
                     $q->where('service_providers.city_id', $cityId);
+                }
+                if ($search !== null && $search !== '') {
+                    $term = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
+                    $q->where(fn($w) => $w
+                        ->where('service_providers.business_name', 'like', $term)
+                        ->orWhere('service_providers.area', 'like', $term));
                 }
 
                 // Location-aware ranking: show ALL providers, nearest city first.

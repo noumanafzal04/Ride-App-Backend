@@ -40,10 +40,19 @@ class RidePostResource extends ApiResource
             ],
 
             'driver' => $this->whenLoaded('driver', fn() => [
-                'id'           => $this->driver?->id,
-                'first_name'   => $this->driver?->first_name,
-                'last_name'    => $this->driver?->last_name,
-                'phone_number' => $this->driver?->phone_number,
+                'id'            => $this->driver?->id,
+                'first_name'    => $this->driver?->first_name,
+                'last_name'     => $this->driver?->last_name,
+                'phone_number'  => $this->driver?->phone_number,
+                'profile_image' => $this->driver?->relationLoaded('profile') && $this->driver->profile?->profile_image
+                    ? asset('storage/' . $this->driver->profile->profile_image)
+                    : null,
+                'rating_avg'    => $this->driver?->relationLoaded('driverProfile') && $this->driver->driverProfile && (float) $this->driver->driverProfile->rating_avg > 0
+                    ? round((float) $this->driver->driverProfile->rating_avg, 1)
+                    : null,
+                'total_trips'   => $this->driver?->relationLoaded('driverProfile') && $this->driver->driverProfile
+                    ? (int) $this->driver->driverProfile->total_trips
+                    : null,
                 'vehicle'      => $this->driver?->vehicles?->first() ? [
                     'id'                  => $this->driver->vehicles->first()->id,
                     'color'               => $this->driver->vehicles->first()->color,

@@ -30,6 +30,11 @@ class RentalBookingResource extends ApiResource
             'owner'           => $this->whenLoaded('owner', fn() => $this->owner ? [
                 'id' => $this->owner->id, 'name' => trim("{$this->owner->first_name} {$this->owner->last_name}") ?: 'Owner', 'phone' => $this->owner->phone_number,
             ] : null),
+            'is_rated'        => $this->relationLoaded('ratings')
+                ? $this->ratings->where('from_user_id', $request->user()?->id)->isNotEmpty()
+                : false,
+            'can_rate'        => $this->status === \App\Models\RentalBooking::STATUS_COMPLETED
+                && ($this->relationLoaded('ratings') ? $this->ratings->where('from_user_id', $request->user()?->id)->isEmpty() : true),
             'created_at'      => $this->created_at?->toISOString(),
         ];
     }

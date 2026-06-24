@@ -30,4 +30,5 @@ class RentalBooking extends Model
     public function rentalCar(): BelongsTo { return $this->belongsTo(RentalCar::class); }
     public function customer(): BelongsTo { return $this->belongsTo(User::class, 'customer_id'); }
     public function owner(): BelongsTo { return $this->belongsTo(User::class, 'owner_id'); }
+    public function ratings(): \Illuminate\Database\Eloquent\Relations\MorphMany { return $this->morphMany(\App\Models\Rating::class, 'rateable'); }
 }

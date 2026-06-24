@@ -27,10 +27,13 @@ class RideBookingResource extends ApiResource
             'can_review'     => $this->status === 'completed' && empty($myReview),
 
             'passenger' => $this->whenLoaded('passenger', fn() => [
-                'id'           => $this->passenger?->id,
-                'first_name'   => $this->passenger?->first_name,
-                'last_name'    => $this->passenger?->last_name,
-                'phone_number' => $this->passenger?->phone_number,
+                'id'            => $this->passenger?->id,
+                'first_name'    => $this->passenger?->first_name,
+                'last_name'     => $this->passenger?->last_name,
+                'phone_number'  => $this->passenger?->phone_number,
+                'profile_image' => $this->passenger?->relationLoaded('profile') && $this->passenger->profile?->profile_image
+                    ? asset('storage/' . $this->passenger->profile->profile_image)
+                    : null,
             ]),
 
             'ride' => $this->whenLoaded('ridePost', fn() => [

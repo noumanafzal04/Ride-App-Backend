@@ -248,6 +248,8 @@ class RidePostAction extends BaseAction
                 RidePost::RESOURCE_RELATIONS,
                 [
                     'driver',
+                    'driver.profile',
+                    'driver.driverProfile',
                     'driver.vehicles',
                     'driver.vehicles.vehicleModel',
                     'driver.vehicles.vehicleModel.make',
@@ -269,6 +271,8 @@ class RidePostAction extends BaseAction
                 RidePost::RESOURCE_RELATIONS,
                 [
                     'driver',
+                    'driver.profile',
+                    'driver.driverProfile',
                     'driver.vehicles',
                     'driver.vehicles.vehicleModel',
                     'driver.vehicles.vehicleModel.make',
@@ -290,6 +294,8 @@ class RidePostAction extends BaseAction
                 RidePost::RESOURCE_RELATIONS,
                 [
                     'driver',
+                    'driver.profile',
+                    'driver.driverProfile',
                     'driver.vehicles',
                     'driver.vehicles.vehicleModel',
                     'driver.vehicles.vehicleModel.make',

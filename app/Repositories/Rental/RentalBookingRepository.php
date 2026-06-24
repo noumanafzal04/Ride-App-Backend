@@ -27,7 +27,7 @@ class RentalBookingRepository extends BaseRepository
     {
         return $this->paginatedList(
             callback: fn($q) => $q->where('customer_id', $customerId)->latest(),
-            relations: $this->relations,
+            relations: array_merge($this->relations, ['ratings:id,rateable_id,rateable_type,from_user_id']),
         );
     }
 

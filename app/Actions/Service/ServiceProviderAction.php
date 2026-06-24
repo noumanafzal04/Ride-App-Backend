@@ -15,6 +15,7 @@ class ServiceProviderAction
         protected NotificationService $notifications,
         protected \App\Services\Notification\AdminNotificationService $adminNotifications,
         protected \App\Services\Billing\BillingService $billing,
+        protected \App\Repositories\Ride\RatingRepository $ratings,
     ) {}
 
     // Free tier allows N categories; more requires an active service plan.
@@ -73,9 +74,9 @@ class ServiceProviderAction
 
     // ─── Public browse ────────────────────────────────────────
 
-    public function browse(?int $categoryId, ?int $cityId, ?float $nearLat = null, ?float $nearLng = null)
+    public function browse(?int $categoryId, ?int $cityId, ?float $nearLat = null, ?float $nearLng = null, ?string $search = null)
     {
-        return $this->repository->paginatedApproved($categoryId, $cityId, null, $nearLat, $nearLng);
+        return $this->repository->paginatedApproved($categoryId, $cityId, null, $nearLat, $nearLng, $search);
     }
 
     public function showPublic(int $id): ServiceProvider
@@ -87,6 +88,18 @@ class ServiceProviderAction
         }
 
         return $provider;
+    }
+
+    /** Reviews customers left for this provider (paginated, latest first). */
+    public function reviews(int $id)
+    {
+        $provider = $this->repository->approvedById($id);
+
+        if (!$provider) {
+            throw new ApiException('Service provider not found.', 404);
+        }
+
+        return $this->ratings->paginatedReceivedForProvider($provider->user_id);
     }
 
     // ─── Admin ────────────────────────────────────────────────

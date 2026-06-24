@@ -28,6 +28,11 @@ class RentalCarAction
         return $this->repository->paginatedBrowse($filters, $nearLat, $nearLng);
     }
 
+    public function models()
+    {
+        return $this->repository->distinctModels();
+    }
+
     public function show(int $id): RentalCar
     {
         $car = $this->repository->findActiveWithRelations($id);

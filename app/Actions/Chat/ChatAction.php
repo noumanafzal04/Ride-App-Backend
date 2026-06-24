@@ -19,6 +19,7 @@ class ChatAction extends BaseAction
     public function __construct(
         ConversationRepository $repository,
         protected MessageRepository $messages,
+        protected \App\Services\Notification\FcmService $fcm,
     ) {
         parent::__construct($repository, 'conversation');
     }
@@ -147,8 +148,23 @@ class ChatAction extends BaseAction
 
             $this->repository->bumpForMessage($conversation, $userId, Str::limit($body, 150));
 
+            $recipientId = $conversation->otherUserId($userId);
+
             // Live to the thread + the recipient's private channel (badge/inbox).
-            broadcast(new MessageSent($message, $conversation->otherUserId($userId)));
+            broadcast(new MessageSent($message, $recipientId));
+
+            // Native push (FCM) so the recipient is alerted without opening the app.
+            // FCM-only — chat keeps its own unread badge, so we don't add a
+            // notification-center row per message. Tapping deep-links to the thread.
+            $sender = $message->sender()->first(['id', 'first_name', 'last_name']);
+            $senderName = $sender ? trim("{$sender->first_name} {$sender->last_name}") : '';
+            $this->fcm->sendToUser(
+                $recipientId,
+                'chat_message',
+                $senderName !== '' ? "New message from {$senderName}" : 'New message',
+                Str::limit($body, 120),
+                ['conversation_id' => $conversationId],
+            );
 
             return $message;
         });

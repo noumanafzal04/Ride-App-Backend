@@ -13,7 +13,7 @@ class ServiceProviderController extends Controller
 {
     public function __construct(protected ServiceProviderAction $action) {}
 
-    /** Browse approved providers (?category_id=&city_id=&near_lat=&near_lng=). */
+    /** Browse approved providers (?category_id=&city_id=&near_lat=&near_lng=&q=). */
     public function index(Request $request)
     {
         $items = $this->action->browse(
@@ -21,6 +21,7 @@ class ServiceProviderController extends Controller
             $request->query('city_id') ? (int) $request->query('city_id') : null,
             $request->filled('near_lat') ? (float) $request->query('near_lat') : null,
             $request->filled('near_lng') ? (float) $request->query('near_lng') : null,
+            $request->filled('q') ? trim((string) $request->query('q')) : null,
         );
 
         return ServiceProviderResource::collection($items)
@@ -34,6 +35,14 @@ class ServiceProviderController extends Controller
         return (new ServiceProviderResource($this->action->showPublic($id)))
             ->wrapWith('provider')
             ->message('Service provider.');
+    }
+
+    /** Reviews customers left for this provider. */
+    public function reviews(int $id)
+    {
+        return \App\Http\Resources\Api\V1\Driver\ReceivedReviewResource::collection($this->action->reviews($id))
+            ->wrapWith('reviews')
+            ->message('Provider reviews.');
     }
 
     /** The current user's provider profile, or { provider: null } if not registered. */
