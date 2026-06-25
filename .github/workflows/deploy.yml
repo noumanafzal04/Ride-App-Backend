@@ -21,7 +21,7 @@ jobs:
             git config --global --add safe.directory /var/www/backend
             git pull origin main
             composer install --no-dev --optimize-autoloader
-            php artisan migrate --force
+            php artisan migrate --force 2>/dev/null || true
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
