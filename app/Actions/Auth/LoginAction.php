@@ -7,6 +7,7 @@ use App\Repositories\Auth\UserRepository;
 use App\Services\Auth\TokenService;
 use Illuminate\Support\Facades\Hash;
 
+
 class LoginAction
 {
     public function __construct(
