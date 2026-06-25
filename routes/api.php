@@ -28,6 +28,9 @@ Route::prefix('v1')->group(function () {
         Route::get('cities', [WorldController::class, 'cities']);
         Route::get('cities/nearest', [WorldController::class, 'nearestCity']);
 
+        // Module flags — which features the app surfaces (admin-controlled).
+        Route::get('modules', [\App\Http\Controllers\Api\V1\ModuleController::class, 'index']);
+
         // Reverb private-channel authorization via the Passport token
         // (Echo authEndpoint → /api/v1/broadcasting/auth)
         Route::post('broadcasting/auth', fn (Request $request) => Broadcast::auth($request));

@@ -13,6 +13,16 @@ class RideBookingResource extends ApiResource
             return $mine ? ['rating' => $mine->rating, 'review' => $mine->review] : null;
         }, null);
 
+        // The ride is considered "done" once its departure time has passed.
+        $departed = $this->relationLoaded('ridePost') && $this->ridePost?->departure_at
+            ? $this->ridePost->departure_at->isPast()
+            : false;
+        // Reviewable after the ride actually happened: completed, OR an accepted
+        // booking whose departure has passed. A pre-departure cancel never qualifies.
+        $reviewable = ($this->status === 'completed' || ($this->status === 'accepted' && $departed)) && empty($myReview);
+        // Can only cancel an accepted seat BEFORE departure.
+        $cancellable = in_array($this->status, ['pending', 'accepted'], true) && !$departed;
+
         return [
             'id'             => $this->id,
             'status'         => $this->status,
@@ -23,8 +33,10 @@ class RideBookingResource extends ApiResource
             'created_at'     => $this->created_at?->toISOString(),
 
             'is_completed'   => $this->status === 'completed',
+            'departed'       => $departed,
             'my_review'      => $myReview,
-            'can_review'     => $this->status === 'completed' && empty($myReview),
+            'can_review'     => $reviewable,
+            'can_cancel'     => $cancellable,
 
             'passenger' => $this->whenLoaded('passenger', fn() => [
                 'id'            => $this->passenger?->id,

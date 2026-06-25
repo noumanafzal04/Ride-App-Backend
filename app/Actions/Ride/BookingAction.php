@@ -178,8 +178,13 @@ class BookingAction extends BaseAction
             $booking = $this->repository->findOrFail($bookingId, relations: ['ridePost']);
             $this->guardParty($userId, $booking);
 
-            if ($booking->status !== 'completed') {
-                throw new ApiException('You can review only after the ride is completed.', 422);
+            // Reviewable once the ride actually happened: completed, OR an accepted
+            // booking whose departure time has passed. A pre-departure cancel never qualifies.
+            $departed = $booking->ridePost?->departure_at?->isPast() ?? false;
+            $canReview = $booking->status === 'completed'
+                || ($booking->status === 'accepted' && $departed);
+            if (!$canReview) {
+                throw new ApiException('You can review only after the ride has taken place.', 422);
             }
 
             $driverId    = $booking->ridePost->driver_id;
@@ -380,11 +385,15 @@ class BookingAction extends BaseAction
                 throw new ApiException('You do not own this booking.', 403);
             }
 
-            // A rider can cancel anytime until the ride is actually completed — the
-            // driver may mark "started" before reaching them, so they must not be
-            // locked in. Only a completed/cancelled/rejected booking can't cancel.
+            // Only a pending/accepted booking can be cancelled.
             if (!in_array($booking->status, ['pending', 'accepted'])) {
                 throw new ApiException('This booking can no longer be cancelled.', 422);
+            }
+
+            // Can't cancel once the departure time has passed — the ride has taken
+            // place, so the rider should review it instead of cancelling.
+            if ($booking->status === 'accepted' && ($booking->ridePost?->departure_at?->isPast() ?? false)) {
+                throw new ApiException('Departure time has passed — this ride can no longer be cancelled. You can leave a review instead.', 422);
             }
 
             // Release the reserved seat. Re-open the post for booking only if it
