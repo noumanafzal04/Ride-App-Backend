@@ -17,6 +17,8 @@ class RideBooking extends Model
         'price_per_seat',
         'total_amount',
         'note',
+        'pickup_lat',
+        'pickup_lng',
         'status',
     ];
 
@@ -24,6 +26,8 @@ class RideBooking extends Model
         'seats_booked'   => 'integer',
         'price_per_seat' => 'decimal:2',
         'total_amount'   => 'decimal:2',
+        'pickup_lat'     => 'float',
+        'pickup_lng'     => 'float',
     ];
 
     // ─── Relationships ────────────────────────────────────

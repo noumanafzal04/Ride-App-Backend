@@ -23,6 +23,20 @@ class RideBookingResource extends ApiResource
         // Can only cancel an accepted seat BEFORE departure.
         $cancellable = in_array($this->status, ['pending', 'accepted'], true) && !$departed;
 
+        // Distance (km) from the ride's origin to the rider's pickup point —
+        // shown on the driver's offer card. Haversine, null if coords missing.
+        $pickupDistanceKm = null;
+        if ($this->pickup_lat !== null && $this->pickup_lng !== null
+            && $this->relationLoaded('ridePost')
+            && $this->ridePost?->from_latitude !== null && $this->ridePost?->from_longitude !== null) {
+            $lat1 = deg2rad((float) $this->ridePost->from_latitude);
+            $lng1 = deg2rad((float) $this->ridePost->from_longitude);
+            $lat2 = deg2rad((float) $this->pickup_lat);
+            $lng2 = deg2rad((float) $this->pickup_lng);
+            $a = sin(($lat2 - $lat1) / 2) ** 2 + cos($lat1) * cos($lat2) * sin(($lng2 - $lng1) / 2) ** 2;
+            $pickupDistanceKm = round(6371 * 2 * asin(min(1, sqrt($a))), 1);
+        }
+
         return [
             'id'             => $this->id,
             'status'         => $this->status,
@@ -30,6 +44,9 @@ class RideBookingResource extends ApiResource
             'price_per_seat' => $this->price_per_seat,
             'total_amount'   => $this->total_amount,
             'note'           => $this->note,
+            'pickup_lat'     => $this->pickup_lat !== null ? (float) $this->pickup_lat : null,
+            'pickup_lng'     => $this->pickup_lng !== null ? (float) $this->pickup_lng : null,
+            'pickup_distance_km' => $pickupDistanceKm,
             'created_at'     => $this->created_at?->toISOString(),
 
             'is_completed'   => $this->status === 'completed',

@@ -45,6 +45,14 @@ class BookingController extends Controller
             ->message(__("{$this->resourceName}.cancelled"));
     }
 
+    // Rider: mark the ride complete (after it has started / departed).
+    public function complete(int $bookingId)
+    {
+        $booking = $this->action->completeByRider(auth()->id(), $bookingId);
+
+        return (new RideBookingResource($booking))->message('Ride completed.');
+    }
+
     // Driver: start the ride → locks it as in_progress
     public function startRide(int $ridePostId)
     {

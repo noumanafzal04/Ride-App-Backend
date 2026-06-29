@@ -160,9 +160,21 @@ class BookingAction extends BaseAction
             );
         }
 
+        $cancelled = $accepted->isEmpty();
         $this->ridePostRepository->update($post->id, [
-            'status' => $accepted->isNotEmpty() ? 'completed' : 'cancelled',
+            'status' => $cancelled ? 'cancelled' : 'completed',
         ]);
+
+        // No one booked/accepted before departure → tell the driver it was dropped.
+        if ($cancelled) {
+            $this->notifications->push(
+                $post->driver_id,
+                'ride_post_cancelled',
+                'Ride post cancelled',
+                'Your ride was cancelled automatically — no bookings were accepted before departure.',
+                ['ride_post_id' => $post->id],
+            );
+        }
 
         // Ride finished → close its conversations (purged 30 days later).
         $this->chat->closeForRidePost($post->id);
@@ -283,6 +295,8 @@ class BookingAction extends BaseAction
                 'price_per_seat' => $ridePost->price_per_seat,
                 'total_amount'   => $seats * $ridePost->price_per_seat,
                 'note'           => $data['note'] ?? null,
+                'pickup_lat'     => $data['pickup_lat'] ?? null,
+                'pickup_lng'     => $data['pickup_lng'] ?? null,
                 'status'         => 'pending',
             ];
 
@@ -345,7 +359,7 @@ class BookingAction extends BaseAction
             relations: [
                 'passenger:id,first_name,last_name,phone_number',
                 'passenger.profile:id,user_id,profile_image',
-                'ridePost:id,driver_id,from_city_id,to_city_id,departure_at,post_type,status',
+                'ridePost:id,driver_id,from_city_id,to_city_id,departure_at,post_type,status,from_latitude,from_longitude',
                 'ridePost.fromCity:id,name',
                 'ridePost.toCity:id,name',
                 'ratings',
@@ -373,6 +387,34 @@ class BookingAction extends BaseAction
                 'ratings',
             ],
         );
+    }
+
+    /**
+     * Rider marks their ride as complete (once it has started or departure passed).
+     * Lets the rider close out the trip themselves, then leave a review.
+     */
+    public function completeByRider(int $passengerId, int $bookingId): RideBooking
+    {
+        return DB::transaction(function () use ($passengerId, $bookingId) {
+            $booking = $this->repository->findOrFail($bookingId, relations: ['ridePost']);
+
+            if ($booking->passenger_id !== $passengerId) {
+                throw new ApiException('You do not own this booking.', 403);
+            }
+            if ($booking->status === 'completed') {
+                return $booking; // already done — idempotent
+            }
+
+            $departed = $booking->ridePost?->departure_at?->isPast() ?? false;
+            $started  = $booking->ridePost?->status === 'in_progress';
+            if (!($booking->status === 'accepted' && ($departed || $started))) {
+                throw new ApiException('You can complete the ride once it has started.', 422);
+            }
+
+            $this->repository->update($booking->id, ['status' => 'completed']);
+
+            return $this->repository->findOrFail($bookingId, relations: ['ridePost']);
+        });
     }
 
     public function cancel(int $passengerId, int $bookingId): RideBooking

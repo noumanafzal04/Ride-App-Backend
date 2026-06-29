@@ -28,6 +28,10 @@ Route::prefix('admin')->group(function () {
         Route::get('notifications', [NotificationController::class, 'index']);
         Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
         Route::post('notifications/read', [NotificationController::class, 'markRead']);
+        Route::post('notifications/broadcast', [NotificationController::class, 'broadcast'])->middleware('permission:settings.update');
+
+        // City list (for targeted broadcasts / filters)
+        Route::get('cities', [\App\Http\Controllers\Api\V1\WorldController::class, 'cities']);
 
         // Roles & permissions
         Route::get('permissions', [RoleController::class, 'permissions'])->middleware('permission:roles.view');
@@ -38,6 +42,7 @@ Route::prefix('admin')->group(function () {
         Route::delete('roles/{id}', [RoleController::class, 'destroy'])->whereNumber('id')->middleware('permission:roles.delete');
 
         // App users + profile verification
+        Route::post('app-users', [UserController::class, 'store'])->middleware('permission:users.update');
         Route::get('app-users', [UserController::class, 'index'])->middleware('permission:users.view');
         Route::get('app-users/{id}', [UserController::class, 'show'])->whereNumber('id')->middleware('permission:users.view');
         Route::post('app-users/{id}/verification', [UserController::class, 'setVerification'])->whereNumber('id')->middleware('permission:users.update');
@@ -54,6 +59,7 @@ Route::prefix('admin')->group(function () {
         Route::post('inspection-requests/{id}/report', [AdminInspectionController::class, 'saveReport'])->whereNumber('id')->middleware('permission:inspections.update');
 
         // Service providers — verification
+        Route::post('service-providers', [AdminServiceProviderController::class, 'store'])->middleware('permission:providers.update');
         Route::get('service-providers', [AdminServiceProviderController::class, 'index'])->middleware('permission:providers.view');
         Route::post('service-providers/{id}/status', [AdminServiceProviderController::class, 'setStatus'])->whereNumber('id')->middleware('permission:providers.update');
 

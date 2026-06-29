@@ -27,6 +27,27 @@ class AppUserAction
         return $this->repository->findDetail($id);
     }
 
+    /** Admin creates an app user, optionally pre-verified so they can log in immediately. */
+    public function create(array $data): User
+    {
+        $verified = (bool) ($data['verified'] ?? false);
+
+        $user = $this->repository->create([
+            'first_name'        => $data['first_name'],
+            'last_name'         => $data['last_name'] ?? null,
+            'phone_number'      => $data['phone_number'],
+            'email'             => $data['email'] ?? null,
+            'password'          => bcrypt($data['password']),
+            'user_type'         => $data['user_type'] ?? 'user',
+            'status'            => 'active',
+            'city_id'           => $data['city_id'] ?? null,
+            'phone_verified_at' => $verified ? now() : null,
+            'email_verified_at' => $verified && !empty($data['email']) ? now() : null,
+        ]);
+
+        return $this->repository->findDetail($user->id);
+    }
+
     /**
      * Set a driver's profile verification status.
      * verified → DriverProfileObserver fires the driver_verified notification.

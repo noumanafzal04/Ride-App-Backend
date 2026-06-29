@@ -25,6 +25,7 @@ Route::post('ride-posts/{ridePostId}/book', [BookingController::class, 'store'])
 // Rider's own bookings
 Route::get('bookings', [BookingController::class, 'riderIndex']);
 Route::post('bookings/{bookingId}/cancel', [BookingController::class, 'cancel']);
+Route::post('bookings/{bookingId}/complete', [BookingController::class, 'complete']); // rider completes the ride
 
 // Either party: review after the ride is completed (driver ends the ride)
 Route::post('bookings/{bookingId}/rate', [BookingController::class, 'rate']);

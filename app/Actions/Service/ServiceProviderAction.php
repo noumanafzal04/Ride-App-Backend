@@ -16,7 +16,56 @@ class ServiceProviderAction
         protected \App\Services\Notification\AdminNotificationService $adminNotifications,
         protected \App\Services\Billing\BillingService $billing,
         protected \App\Repositories\Ride\RatingRepository $ratings,
+        protected \App\Repositories\Auth\UserRepository $users,
     ) {}
+
+    /**
+     * Admin creates a provider. Finds the user by phone (creates one if new),
+     * then sets up an APPROVED provider profile with the chosen categories.
+     */
+    public function adminCreate(array $data): ServiceProvider
+    {
+        return DB::transaction(function () use ($data) {
+            $user = $this->users->findOne(callback: fn($q) => $q->where('phone_number', $data['phone_number']));
+
+            if (!$user) {
+                $user = $this->users->create([
+                    'first_name'        => $data['first_name'] ?? $data['business_name'],
+                    'phone_number'      => $data['phone_number'],
+                    'password'          => bcrypt(\Illuminate\Support\Str::random(14)),
+                    'user_type'         => 'user',
+                    'status'            => 'active',
+                    'phone_verified_at' => now(),
+                ]);
+            }
+
+            if ($this->repository->forUser($user->id)) {
+                throw new ApiException('This user already has a service provider profile.', 422);
+            }
+
+            $provider = $this->repository->create([
+                'user_id'       => $user->id,
+                'business_name' => $data['business_name'],
+                'city_id'       => $data['city_id'] ?? null,
+                'area'          => $data['area'] ?? null,
+                'phone'         => $data['phone'] ?? $data['phone_number'],
+                'description'   => $data['description'] ?? null,
+                'status'        => ServiceProvider::STATUS_APPROVED,
+            ]);
+
+            $this->repository->syncCategories($provider, $data['category_ids']);
+
+            $this->notifications->push(
+                $user->id,
+                'service_provider_approved',
+                'You\'re a service provider',
+                'An admin set up your service provider profile — you can now receive requests.',
+                ['provider_id' => $provider->id],
+            );
+
+            return $this->repository->forUser($user->id);
+        });
+    }
 
     // Free tier allows N categories; more requires an active service plan.
     // No-op while billing is disabled for the service module.

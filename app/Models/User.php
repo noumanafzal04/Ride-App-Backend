@@ -22,6 +22,7 @@ class User extends Authenticatable
         'password',
         'user_type',
         'status',
+        'city_id',
         'is_admin',
         'phone_verified_at',
         'email_verified_at',

@@ -39,6 +39,11 @@ class WorldController extends Controller
 
         $city = $this->action->nearest((float) $data['lat'], (float) $data['lng']);
 
+        // Remember the user's city for targeted admin broadcasts.
+        if ($city && ($user = $request->user()) && (int) $user->city_id !== (int) $city->id) {
+            $user->forceFill(['city_id' => $city->id])->save();
+        }
+
         return (new CitiesResource($city))->wrapWith('city');
     }
 }

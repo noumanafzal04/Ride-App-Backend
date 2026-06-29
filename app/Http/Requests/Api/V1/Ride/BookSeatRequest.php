@@ -14,8 +14,10 @@ class BookSeatRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'seats' => ['required', 'integer', 'min:1', 'max:20'],
-            'note'  => ['nullable', 'string', 'max:500'],
+            'seats'      => ['required', 'integer', 'min:1', 'max:20'],
+            'note'       => ['nullable', 'string', 'max:500'],
+            'pickup_lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'pickup_lng' => ['nullable', 'numeric', 'between:-180,180'],
         ];
     }
 }
