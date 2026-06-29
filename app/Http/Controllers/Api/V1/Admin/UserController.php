@@ -33,6 +33,11 @@ class UserController extends Controller
             ->message('Users.');
     }
 
+    public function stats()
+    {
+        return ApiResponse::success($this->action->stats(), 'User stats.');
+    }
+
     public function show(int $id)
     {
         return ApiResponse::success(new AppUserResource($this->action->show($id)), 'User.');

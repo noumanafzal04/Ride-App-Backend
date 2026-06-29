@@ -12,6 +12,18 @@ class AppUserRepository extends BaseRepository
         $this->model = new User();
     }
 
+    /** Headline counts for the admin Users dashboard cards. */
+    public function adminStats(): array
+    {
+        return [
+            'total'           => (int) $this->model->newQuery()->count(),
+            'drivers'         => (int) $this->model->newQuery()->where('user_type', 'driver')->count(),
+            'riders'          => (int) $this->model->newQuery()->where('user_type', 'user')->count(),
+            'pending_drivers' => (int) $this->model->newQuery()
+                ->whereHas('driverProfile', fn($d) => $d->where('verification_status', 'pending'))->count(),
+        ];
+    }
+
     /** App users (riders/drivers) for the admin list. Optional type + verification filters. */
     public function paginatedForAdmin(array $filters = [], ?int $limit = null)
     {

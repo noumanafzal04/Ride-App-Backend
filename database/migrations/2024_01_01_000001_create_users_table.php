@@ -19,6 +19,10 @@ return new class extends Migration
             $table->string('password');
             $table->enum('user_type', UserType::userDriver())->default(UserType::USER);
             $table->enum('status', Status::activeInactive())->default(Status::ACTIVE);
+            // Team members who can review/manage inspection requests.
+            $table->boolean('is_admin')->default(false);
+            // Last-known city (set when the app resolves the nearest city) — for targeted admin broadcasts.
+            $table->foreignId('city_id')->nullable()->constrained('cities')->nullOnDelete();
             $table->timestamp('phone_verified_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('last_login_at')->nullable();
@@ -27,6 +31,7 @@ return new class extends Migration
 
             $table->index('user_type');
             $table->index('status');
+            $table->index('city_id');
         });
     }
 

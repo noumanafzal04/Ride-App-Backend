@@ -22,6 +22,11 @@ class AppUserAction
         return $this->repository->paginatedForAdmin($filters, $perPage);
     }
 
+    public function stats(): array
+    {
+        return $this->repository->adminStats();
+    }
+
     public function show(int $id): User
     {
         return $this->repository->findDetail($id);

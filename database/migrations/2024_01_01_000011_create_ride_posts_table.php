@@ -31,13 +31,15 @@ return new class extends Migration
             $table->decimal('to_longitude', 10, 7)->nullable();
 
             $table->dateTime('departure_at');
-            $table->unsignedTinyInteger('available_seats');
+            // Private posts book the whole vehicle, so seats aren't tracked → nullable.
+            $table->unsignedTinyInteger('available_seats')->nullable();
             $table->decimal('price_per_seat', 10, 2);
             $table->boolean('luggage_allowed')->default(true);
             $table->text('notes')->nullable();
 
             $table->enum('post_type', ['private', 'shared'])->default('shared');
-            $table->enum('status', ['active', 'full', 'completed', 'cancelled'])->default('active');
+            // active → full → in_progress → completed (or cancelled)
+            $table->enum('status', ['active', 'full', 'in_progress', 'completed', 'cancelled'])->default('active');
 
             $table->timestamps();
 

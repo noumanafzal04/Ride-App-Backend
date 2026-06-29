@@ -21,6 +21,44 @@ class RidePostRepository extends BaseRepository
             ->findOrFail($id);
     }
 
+    /** Headline counts for the admin Rides dashboard cards. */
+    public function adminStats(): array
+    {
+        return [
+            'total'     => (int) $this->model->newQuery()->count(),
+            'active'    => (int) $this->model->newQuery()->where('status', 'active')->count(),
+            'completed' => (int) $this->model->newQuery()->where('status', 'completed')->count(),
+            'cancelled' => (int) $this->model->newQuery()->where('status', 'cancelled')->count(),
+        ];
+    }
+
+    /** Admin ride listing — driver + cities + booking count, optional filters. */
+    public function paginatedForAdmin(array $filters = [], ?int $limit = null)
+    {
+        return $this->paginatedList(
+            callback: function ($q) use ($filters) {
+                if (!empty($filters['status']))  $q->where('status', $filters['status']);
+                if (!empty($filters['city_id'])) {
+                    $q->where(fn($w) => $w->where('from_city_id', $filters['city_id'])->orWhere('to_city_id', $filters['city_id']));
+                }
+                if (!empty($filters['search'])) {
+                    $s = $filters['search'];
+                    $q->whereHas('driver', fn($d) => $d
+                        ->where('first_name', 'like', "%{$s}%")
+                        ->orWhere('last_name', 'like', "%{$s}%")
+                        ->orWhere('phone_number', 'like', "%{$s}%"));
+                }
+                $q->withCount('bookings')->latest('departure_at');
+            },
+            relations: [
+                'driver:id,first_name,last_name,phone_number',
+                'fromCity:id,name',
+                'toCity:id,name',
+            ],
+            limit: $limit,
+        );
+    }
+
     /**
      * Count browseable posts newer than $afterId for the given rider + filters.
      * Mirrors the constraints in RidePostAction::browse() — a single cheap COUNT.

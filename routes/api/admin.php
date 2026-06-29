@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AdminRideController;
 use App\Http\Controllers\Api\V1\Admin\AuthController;
 use App\Http\Controllers\Api\V1\Admin\NotificationController;
 use App\Http\Controllers\Api\V1\Admin\ReportController;
@@ -43,9 +44,15 @@ Route::prefix('admin')->group(function () {
 
         // App users + profile verification
         Route::post('app-users', [UserController::class, 'store'])->middleware('permission:users.update');
+        Route::get('app-users/stats', [UserController::class, 'stats'])->middleware('permission:users.view');
         Route::get('app-users', [UserController::class, 'index'])->middleware('permission:users.view');
         Route::get('app-users/{id}', [UserController::class, 'show'])->whereNumber('id')->middleware('permission:users.view');
         Route::post('app-users/{id}/verification', [UserController::class, 'setVerification'])->whereNumber('id')->middleware('permission:users.update');
+
+        // Rides management
+        Route::get('rides/stats', [AdminRideController::class, 'stats'])->middleware('permission:rides.view');
+        Route::get('rides', [AdminRideController::class, 'index'])->middleware('permission:rides.view');
+        Route::post('rides/{id}/cancel', [AdminRideController::class, 'cancel'])->whereNumber('id')->middleware('permission:rides.update');
 
         // Reports
         Route::get('reports/summary', [ReportController::class, 'summary'])->middleware('permission:reports.view');

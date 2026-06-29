@@ -7,17 +7,24 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Rider↔driver chat, scoped to an accepted booking. One conversation per
-     * booking; opened on accept, closed when the ride completes/cancels, and
-     * purged 30 days after closing (chat:purge-closed) to keep the DB lean.
-     * Per-side unread counters make the inbox + footer badge a single query.
+     * Generic 2-party chat. Originally rider↔driver scoped to a ride booking;
+     * now also carries service / marketplace / rental chats via `type` + the
+     * matching nullable context FK (driver_id/rider_id are the two participants
+     * generically — e.g. provider=driver_id, customer=rider_id for services).
+     * Opened on accept, closed when the context completes/cancels, purged 30 days
+     * after (chat:purge-closed). Per-side unread counters keep the badge 1 query.
      */
     public function up(): void
     {
         Schema::create('conversations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('booking_id')->unique()->constrained('ride_bookings')->cascadeOnDelete();
+            $table->string('type')->default('ride'); // ride | service | marketplace | rental
+            // Context — exactly one is set depending on `type` (all nullable).
+            $table->foreignId('booking_id')->nullable()->unique()->constrained('ride_bookings')->cascadeOnDelete();
             $table->foreignId('ride_post_id')->nullable()->constrained('ride_posts')->nullOnDelete();
+            $table->foreignId('service_booking_id')->nullable()->constrained('service_bookings')->nullOnDelete();
+            $table->foreignId('car_listing_id')->nullable()->constrained('car_listings')->nullOnDelete();
+            $table->foreignId('rental_booking_id')->nullable()->constrained('rental_bookings')->nullOnDelete();
             $table->foreignId('driver_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('rider_id')->constrained('users')->cascadeOnDelete();
 

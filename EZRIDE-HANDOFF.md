@@ -3,8 +3,11 @@
 > Read this first, then skim the files/schema listed below to understand both projects before making changes.
 
 ## Projects
-- **Backend (Laravel 12 + Passport):** `/Users/devdimensions/PhpstormProjects/ezride-backend/Ride-App-Backend`
+- **Backend (Laravel 12 — Passport for app `auth:api`, Sanctum for admin `auth:sanctum`):** `/Users/devdimensions/PhpstormProjects/ezride-backend/Ride-App-Backend`
 - **Mobile (React Native 0.84):** `/Users/devdimensions/PhpstormProjects/mobile-app/EZRide`
+- **Admin panel (Vite + React 19 + antd 6 + Tailwind v4):** `/Users/devdimensions/PhpstormProjects/ez-ride-admin-panel`
+
+> ⚠️ This doc's lower half ("Modules — DONE", "Out of scope", "Verified state") describes the **v1** app. The platform has since grown well beyond it — **see [§ v2 — Current state](#v2--current-state-2026) below for what actually exists today** (marketplace, rentals, services, chat, FCM, subscriptions, dynamic modules, and the full admin panel). When the two disagree, the v2 section wins.
 
 ## Architecture & patterns (follow these exactly)
 **Backend:** `Route → Controller → Action → Repository → Model`.
@@ -97,3 +100,61 @@ Indexes: `ride_posts(from,to,departure,status)`, `ride_bookings(passenger_id,sta
 
 ## Verified state
 Backend boots, **52 `api/v1` routes**, all migrations ran. Mobile `src` lints with **0 errors**. Functional end-to-end: city-to-city flow + notifications + reviews + history + ride alerts + Reverb, **and the full car-inspection module** (submit, lifecycle, in-app + email notifications, tracking code + public track, requester cancel, category report with auto grade, in-app admin tool). Email uses the existing SMTP config (`MAIL_*` in `.env`).
+
+---
+
+# v2 — Current state (2026)
+
+Everything above describes v1. Since then the app became a **multi-module super-app** and gained a full **web admin panel**. This section is the source of truth.
+
+## Modules now live (mobile + backend)
+1. **City-to-city rides** — as v1, plus: rider sends booking **pickup lat/lng** so the driver sees distance; **auto-cancel at departure** (`rides:close-stale` cancels un-started rides at departure time and notifies the driver); rider **"Complete Ride"** flow → review sheet; review-after-departure logic.
+2. **Car inspection** — as v1 (admin now also lives in the web panel, not just the in-app tool).
+3. **Buy / Sell (Marketplace)** — used-car listings. Self listings + **EZRide-managed** listings (admin sets price, approves, can mark sold, feature). Optional inspection grade badge.
+4. **Rent a Car** — daily-rate rentals, `rental_type` = with_driver / self_drive / both. Self + managed, admin price/approve/pause/feature.
+5. **Service Providers** — verified car-service providers by category (mechanic, car wash, AC…), reviews, provider list/detail. Admin approves/suspends/rejects and can create providers directly.
+6. **Chat** — ride/inspection conversations; **optimistic send with tick**, closes when a ride is pulled. Push via FCM.
+7. **Subscriptions / Billing** — per-module post limits. Rides: **2 free posts then a 24h pass** (`PaywallSheet`). `BillingService::assertCanPost/consume`, per-module free-limit + enforcement toggle, admin can grant plans.
+8. **Dynamic App Modules** — admin can turn each module on/off; disabled modules vanish from the app's home/search/sidebar/tabs instantly. Default ON: **Rides + Inspection** only. `app_modules` table + `AppModuleSeeder`; mobile `useModules()` gates everything.
+
+## Mobile UI (v2 highlights)
+- **HomeScreenV3** — light PakWheels/OLX-style home: logo-center header + city dropdown, module grid, featured rails.
+- **Footer** — Home / Rides / Post-or-Search / Messages / Notifications (Services tab dropped). Role-aware.
+- **Messages** — top tabs (All / Rides / Inspection). **Driver-mode RidesHub** = posted rides + offers (no Find tab).
+- **react-native-date-picker** wheel pickers (AM/PM) — native, needs a rebuild after install.
+- Keyboard-aware forms, bottom-inset fixes, `Skeleton`s, FCM push integrated.
+- `src/config.js` — ENV switch (dev/prod); **user manages this live, don't revert their edits.**
+
+## Backend (v2 additions)
+- **Two guards:** app = Passport `auth:api`; admin = Sanctum `auth:sanctum` + `permission:module.action` middleware (`EnsureAdminPermission`). Super Admin bypasses all (`AdminUser::hasPermission` = `isSuper() || in_array(...)`).
+- **RBAC** — `AdminRbacSeeder` catalog (module → actions). Permissions: `users, rides, inspections, providers, listings, rentals, billing, categories, reports, staff, roles, settings`. Roles: Super Admin / Admin / Employee. Re-run after adding a permission: `php artisan db:seed --class=AdminRbacSeeder --force` (idempotent `firstOrCreate`).
+- **NotificationService::push(userId, type, title, message, data)** = DB notification + Reverb broadcast + **FCM** (FcmService loops device tokens; outbound only). Reverb on `0.0.0.0:8090` (Supervisor). Queue `QUEUE_CONNECTION=database` + Supervisor worker.
+- **Broadcast notifications** — admin sends a title+message to **everyone / by role / by city** → `SendBroadcastNotification` queued job chunks the audience and pushes. `users.city_id` (added via `2026_06_25_000003_add_city_id_to_users`) is set when the app calls `nearestCity()`.
+- **Admin rides** — `AdminRideController` (list with status/city/search filters, `RidePostAction::adminCancel` cancels active bookings + notifies driver & riders). `AdminRideController@stats` + `UserController@stats` give the dashboard card counts.
+- ⚠️ **API Resources for admin must extend `ApiResource`** (not plain `JsonResource`) — `::collection()->wrapWith()->message()` only exist on the custom base (a plain JsonResource caused a 500).
+- **Passport oauth migration gotcha on the server:** duplicate `oauth_*` migrations fail ("table exists") and block later migrations. Fix: run a single one `php artisan migrate --path=database/migrations/<file>.php --force`, or `INSERT IGNORE INTO migrations`.
+- **Secrets:** Firebase `storage/app/firebase/service-account.json` is gitignored — scp manually to the server, never commit.
+
+## DB tables added since v1
+`app_modules`, marketplace/rental listing tables, `service_providers` (+ categories pivot) + provider `ratings`, `service_categories`, chat tables, billing/subscription tables (the v1 "legacy/unused" `subscription_plans`/`user_subscriptions`/`chat_rooms` note is **obsolete** — billing & chat are real now), `users.city_id`. Admin: `admin_users`, `roles`, `permissions` (+ pivots).
+
+## The Admin Panel
+React 19 + Vite + **antd 6** + **Tailwind v4** + TanStack Query + Zustand (`authStore`). Real-time admin notifications over Reverb (`useAdminRealtime`).
+- **Theme** — `src/index.css` `@theme`: brand yellow (`brand-50…600`, primary `#ffd400`) + navy `ink` (`#07163b`). antd theme in `src/main.jsx` (airy Table, 40px Select/Input). Body bg `#f7f8fa`.
+- **Layout** — `DashboardLayout` → `Sidebar` (**light/white**, grouped sections, active item = **light-yellow `brand-100` fill + navy left accent bar + navy icon/text**) + `Topbar` (search, live notif bell, user menu). Nav in `src/constants/nav.js` (lucide icons, `perm`-gated). Routes in `src/App.jsx`.
+- **Shared design kit** (`src/components/`):
+  - `PageHeader` — title/subtitle + right action cluster + built-in refresh; `IconButton` helper.
+  - `StatCard` / `StatCards` — vibrant **gradient** KPI cards (tones: violet/teal/ink/blue/amber/rose/emerald/slate). `SoftStat` — white KPI card w/ colored icon chip (8 tones) for secondary metrics.
+  - `StatusPill` — dot+label pill (green/red/amber/blue/gray/violet/cyan). **Use this for all statuses** (not antd Tag).
+  - `FilterBar` / `FilterGroup` — clean single-row bar: search left, **Select dropdowns** right. (Primary actions live in `PageHeader`, NOT in FilterBar — FilterBar no longer takes `title`/`actions`.)
+- **Pages** (all converted to the kit): Dashboard (hero + gradient KPIs + charts/donuts), Reports (range filter + KPIs + breakdown bars), Users (CRUD: create pre-verified user, verify/reject drivers, stats, CSV export), Rides (list/filter/admin-cancel, stats), Announcements (send notification: audience cards + live phone preview), Providers, Listings, Rentals, Inspections, Categories, Staff, Roles (matrix), Billing (Plans / Free-limits / Subscriptions tabs), Modules (toggle features on/off). List pages share PageHeader + refresh + CSV export + dropdown filters + status pills + soft-shadow tables.
+- **Service/hooks pattern** — `src/services/adminService.js` (axios), one `src/hooks/use<X>.js` per domain (`useQuery`/`useMutation`, `keepPreviousData`, invalidate on success). `usePermissions()` → `{ can, isSuper }`.
+
+## Deploy
+- **Backend:** pull → `php artisan migrate` (use single-`--path` trick if oauth migrations block) → `php artisan db:seed --class=AdminRbacSeeder --force` → restart queue worker + Reverb. scp the Firebase service-account JSON.
+- **Admin panel:** `npm run build` → deploy `dist/`. `.env`: `VITE_API_URL`, `VITE_REVERB_HOST` (user manages these).
+- **Mobile:** build APK; native rebuild needed after date-picker/FCM native deps.
+
+## Open / next ideas
+- Roll any future admin list pages through the same kit (PageHeader + StatCards + FilterBar dropdowns + StatusPill).
+- Optional: convert `useMyBookings`/`useDriverBookings` to infinite scroll; per-route Reverb channels; admin stat endpoints for Providers/Listings/Rentals (only Users + Rides have them today, so those pages skip gradient cards).

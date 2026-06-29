@@ -5,254 +5,284 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\City;
 
+/**
+ * Punjab Cities & Towns Seeder
+ *
+ * Sources:
+ *   - GeoNames geographical database (WGS84, open license)
+ *   - Punjab Revenue Dept notification Dec 2024 (41 districts, 156 tehsils)
+ *
+ * Coverage: 245 entries — all major cities, towns, tehsil
+ * headquarters, and significant urban settlements across all 41 Punjab districts.
+ */
 class PakPunjabCitiesSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info('Seeding Punjab tehsils into cities table...');
-
-        $tehsils = [
-            // ── Bahawalpur Division ──────────────────────────────────────────
-            // Bahawalnagar District
-            ['name' => 'Bahawalnagar',          'lat' => 29.9937, 'lon' => 73.2545],
-            ['name' => 'Chishtian',             'lat' => 29.7975, 'lon' => 72.8567],
-            ['name' => 'Haroonabad',            'lat' => 29.6139, 'lon' => 73.1314],
-            ['name' => 'Minchinabad',           'lat' => 30.1647, 'lon' => 73.5694],
-            ['name' => 'Fort Abbas',            'lat' => 29.1928, 'lon' => 72.8547],
-
-            // Bahawalpur District
-            ['name' => 'Ahmadpur East',         'lat' => 29.1436, 'lon' => 71.2572],
-            ['name' => 'Bahawalpur City',       'lat' => 29.3957, 'lon' => 71.6833],
-            ['name' => 'Bahawalpur Saddar',     'lat' => 29.3700, 'lon' => 71.6700],
-            ['name' => 'Hasilpur',              'lat' => 29.6939, 'lon' => 72.5550],
-            ['name' => 'Khairpur Tamewali',     'lat' => 29.5614, 'lon' => 72.2228],
-            ['name' => 'Yazman',                'lat' => 28.9197, 'lon' => 71.7444],
-
-            // Rahim Yar Khan District
-            ['name' => 'Rahim Yar Khan',        'lat' => 28.4201, 'lon' => 70.2959],
-            ['name' => 'Sadiqabad',             'lat' => 28.3104, 'lon' => 70.1274],
-            ['name' => 'Liaqatpur',             'lat' => 28.9233, 'lon' => 70.9058],
-            ['name' => 'Khanpur',               'lat' => 28.6469, 'lon' => 70.6571],
-
-            // ── D.G. Khan Division ───────────────────────────────────────────
-            // Dera Ghazi Khan District
-            ['name' => 'Dera Ghazi Khan',       'lat' => 30.0325, 'lon' => 70.6402],
-            ['name' => 'Kot Chutta',            'lat' => 30.4667, 'lon' => 70.5333],
-
-            // Jampur District
-            ['name' => 'Jampur',                'lat' => 29.6431, 'lon' => 70.5958],
-            ['name' => 'Dajal',                 'lat' => 29.5500, 'lon' => 70.4333],
-
-            // Kot Addu District
-            ['name' => 'Kot Addu',              'lat' => 30.4667, 'lon' => 70.9667],
-            ['name' => 'Chowk Sarwar Shaheed',  'lat' => 30.5667, 'lon' => 71.0167],
-
-            // Layyah District
-            ['name' => 'Layyah',                'lat' => 30.9648, 'lon' => 70.9399],
-            ['name' => 'Karor Lal Esan',        'lat' => 31.2242, 'lon' => 70.9519],
-            ['name' => 'Chaubara',              'lat' => 30.7667, 'lon' => 71.0333],
-
-            // Muzaffargarh District
-            ['name' => 'Muzaffargarh',          'lat' => 30.0744, 'lon' => 71.1847],
-            ['name' => 'Jatoi',                 'lat' => 29.9900, 'lon' => 70.8500],
-            ['name' => 'Alipur',                'lat' => 29.3667, 'lon' => 70.9167],
-
-            // Rajanpur District
-            ['name' => 'Rajanpur',              'lat' => 29.1042, 'lon' => 70.3300],
-            ['name' => 'Rojhan',                'lat' => 28.6886, 'lon' => 69.9667],
-
-            // Taunsa District
-            ['name' => 'Taunsa',                'lat' => 30.7056, 'lon' => 70.6578],
-
-            // ── Faisalabad Division ──────────────────────────────────────────
-            // Chiniot District
-            ['name' => 'Chiniot',               'lat' => 31.7200, 'lon' => 72.9781],
-            ['name' => 'Bhowana',               'lat' => 31.5597, 'lon' => 72.6503],
-            ['name' => 'Lalian',                'lat' => 31.8297, 'lon' => 72.8006],
-
-            // Faisalabad District
-            ['name' => 'Faisalabad City',       'lat' => 31.4187, 'lon' => 73.0791],
-            ['name' => 'Faisalabad Saddar',     'lat' => 31.3956, 'lon' => 73.0650],
-            ['name' => 'Chak Jhumra',           'lat' => 31.5667, 'lon' => 73.1833],
-            ['name' => 'Jaranwala',             'lat' => 31.3454, 'lon' => 73.4298],
-            ['name' => 'Samundri',              'lat' => 31.0644, 'lon' => 72.9678],
-            ['name' => 'Tandlianwala',          'lat' => 31.0333, 'lon' => 73.1333],
-
-            // Jhang District
-            ['name' => 'Jhang',                 'lat' => 31.2780, 'lon' => 72.3118],
-            ['name' => 'Shorkot',               'lat' => 30.9667, 'lon' => 72.0000],
-            ['name' => 'Ahmadpur Sial',         'lat' => 31.2500, 'lon' => 71.7833],
-            ['name' => 'Athara Hazari',         'lat' => 31.5000, 'lon' => 72.0167],
-
-            // Toba Tek Singh District
-            ['name' => 'Toba Tek Singh',        'lat' => 30.9769, 'lon' => 72.4843],
-            ['name' => 'Kamalia',               'lat' => 30.7256, 'lon' => 72.6454],
-
-            // ── Gujranwala Division ──────────────────────────────────────────
-            // Gujranwala District
-            ['name' => 'Gujranwala',            'lat' => 32.1617, 'lon' => 74.1883],
-            ['name' => 'Kamoke',                'lat' => 31.9747, 'lon' => 74.2214],
-            ['name' => 'Nowshera Virkan',       'lat' => 32.0333, 'lon' => 73.8667],
-            ['name' => 'Wazirabad',             'lat' => 32.4436, 'lon' => 74.1203],
-
-            // Gujrat District
-            ['name' => 'Gujrat',                'lat' => 32.5742, 'lon' => 74.0797],
-            ['name' => 'Kharian',               'lat' => 32.8167, 'lon' => 73.8833],
-            ['name' => 'Sarai Alamgir',         'lat' => 32.9031, 'lon' => 73.7572],
-
-            // Hafizabad District
-            ['name' => 'Hafizabad',             'lat' => 32.0711, 'lon' => 73.6878],
-            ['name' => 'Pindi Bhattian',        'lat' => 31.9000, 'lon' => 73.2667],
-
-            // Mandi Bahauddin District
-            ['name' => 'Mandi Bahauddin',       'lat' => 32.5864, 'lon' => 73.4917],
-            ['name' => 'Malikwal',              'lat' => 32.3478, 'lon' => 73.8917],
-            ['name' => 'Phalia',                'lat' => 32.4333, 'lon' => 73.5833],
-
-            // Narowal District
-            ['name' => 'Narowal',               'lat' => 32.1000, 'lon' => 74.8833],
-            ['name' => 'Shakargarh',            'lat' => 32.2639, 'lon' => 75.1600],
-
-            // Sialkot District
-            ['name' => 'Sialkot',               'lat' => 32.4945, 'lon' => 74.5229],
-            ['name' => 'Daska',                 'lat' => 32.3247, 'lon' => 74.3503],
-            ['name' => 'Pasrur',                'lat' => 32.2667, 'lon' => 74.6667],
-            ['name' => 'Sambrial',              'lat' => 32.4736, 'lon' => 74.3525],
-
-            // ── Lahore Division ──────────────────────────────────────────────
-            // Lahore District
-            ['name' => 'Lahore',                'lat' => 31.5497, 'lon' => 74.3436],
-            ['name' => 'Lahore Cantt',          'lat' => 31.5200, 'lon' => 74.3800],
-            ['name' => 'Model Town',            'lat' => 31.4833, 'lon' => 74.3167],
-            ['name' => 'Raiwind',               'lat' => 31.2489, 'lon' => 74.2258],
-            ['name' => 'Shalimar',              'lat' => 31.5667, 'lon' => 74.3833],
-
-            // Kasur District
-            ['name' => 'Kasur',                 'lat' => 31.1167, 'lon' => 74.4500],
-            ['name' => 'Chunian',               'lat' => 30.9667, 'lon' => 73.9667],
-            ['name' => 'Pattoki',               'lat' => 31.0208, 'lon' => 73.8567],
-
-            // Nankana Sahib District
-            ['name' => 'Nankana Sahib',         'lat' => 31.4500, 'lon' => 73.7167],
-            ['name' => 'Sangla Hill',           'lat' => 31.7153, 'lon' => 73.3817],
-            ['name' => 'Shahkot',               'lat' => 31.5500, 'lon' => 73.4500],
-
-            // Sheikhupura District
-            ['name' => 'Sheikhupura',           'lat' => 31.7131, 'lon' => 73.9850],
-            ['name' => 'Ferozewala',            'lat' => 31.7667, 'lon' => 74.1667],
-            ['name' => 'Muridke',               'lat' => 31.8022, 'lon' => 74.2606],
-
-            // ── Multan Division ──────────────────────────────────────────────
-            // Khanewal District
-            ['name' => 'Khanewal',              'lat' => 30.3019, 'lon' => 71.9319],
-            ['name' => 'Jahanian',              'lat' => 30.2833, 'lon' => 72.2833],
-            ['name' => 'Mian Channu',           'lat' => 30.4400, 'lon' => 72.3533],
-
-            // Lodhran District
-            ['name' => 'Lodhran',               'lat' => 29.5333, 'lon' => 71.6333],
-            ['name' => 'Dunyapur',              'lat' => 29.7956, 'lon' => 71.7181],
-            ['name' => 'Kehror Pakka',          'lat' => 29.3667, 'lon' => 71.9167],
-
-            // Multan District
-            ['name' => 'Multan City',           'lat' => 30.1978, 'lon' => 71.4711],
-            ['name' => 'Multan Saddar',         'lat' => 30.1760, 'lon' => 71.4720],
-            ['name' => 'Shujabad',              'lat' => 29.8778, 'lon' => 71.3050],
-
-            // Vehari District
-            ['name' => 'Vehari',                'lat' => 30.0444, 'lon' => 72.3494],
-            ['name' => 'Burewala',              'lat' => 30.1667, 'lon' => 72.6667],
-            ['name' => 'Mailsi',                'lat' => 29.8000, 'lon' => 72.1667],
-
-            // ── Rawalpindi Division ──────────────────────────────────────────
-            // Attock District
-            ['name' => 'Attock',                'lat' => 33.7681, 'lon' => 72.3607],
-            ['name' => 'Fateh Jang',            'lat' => 33.5617, 'lon' => 72.6503],
-            ['name' => 'Hassan Abdal',          'lat' => 33.8197, 'lon' => 72.6889],
-            ['name' => 'Hazro',                 'lat' => 33.9050, 'lon' => 72.4917],
-            ['name' => 'Jand',                  'lat' => 33.4333, 'lon' => 72.0167],
-            ['name' => 'Pindi Gheb',            'lat' => 33.2500, 'lon' => 72.2667],
-
-            // Chakwal District
-            ['name' => 'Chakwal',               'lat' => 32.9325, 'lon' => 72.8555],
-            ['name' => 'Choa Saidan Shah',      'lat' => 32.7200, 'lon' => 72.9833],
-            ['name' => 'Kallar Kahar',          'lat' => 32.7769, 'lon' => 72.7003],
-
-            // Jhelum District
-            ['name' => 'Jhelum',                'lat' => 32.9405, 'lon' => 73.7276],
-            ['name' => 'Dina',                  'lat' => 32.7667, 'lon' => 73.5167],
-            ['name' => 'Pind Dadan Khan',       'lat' => 32.5833, 'lon' => 73.0333],
-            ['name' => 'Sohawa',                'lat' => 33.0667, 'lon' => 73.5333],
-
-            // Murree District
-            ['name' => 'Murree',                'lat' => 33.9042, 'lon' => 73.3903],
-            ['name' => 'Kotli Sattian',         'lat' => 33.6667, 'lon' => 73.3833],
-
-            // Rawalpindi District
-            ['name' => 'Rawalpindi',            'lat' => 33.6261, 'lon' => 73.0714],
-            ['name' => 'Gujar Khan',            'lat' => 33.2553, 'lon' => 73.3039],
-            ['name' => 'Kahuta',                'lat' => 33.5950, 'lon' => 73.3900],
-            ['name' => 'Kallar Syedan',         'lat' => 33.7833, 'lon' => 73.2833],
-            ['name' => 'Taxila',                'lat' => 33.7464, 'lon' => 72.8419],
-
-            // Talagang District
-            ['name' => 'Talagang',              'lat' => 32.9283, 'lon' => 72.4156],
-            ['name' => 'Lawa',                  'lat' => 33.1000, 'lon' => 72.3667],
-
-            // ── Sahiwal Division ─────────────────────────────────────────────
-            // Okara District
-            ['name' => 'Okara',                 'lat' => 30.8085, 'lon' => 73.4594],
-            ['name' => 'Depalpur',              'lat' => 30.7111, 'lon' => 73.1381],
-            ['name' => 'Renala Khurd',          'lat' => 30.8789, 'lon' => 73.5981],
-
-            // Pakpattan District
-            ['name' => 'Pakpattan',             'lat' => 30.3427, 'lon' => 73.3869],
-            ['name' => 'Arifwala',              'lat' => 30.2979, 'lon' => 73.0582],
-
-            // Sahiwal District
-            ['name' => 'Sahiwal',               'lat' => 30.6777, 'lon' => 73.1068],
-            ['name' => 'Chichawatni',           'lat' => 30.5351, 'lon' => 72.6995],
-
-            // ── Sargodha Division ────────────────────────────────────────────
-            // Bhakkar District
-            ['name' => 'Bhakkar',               'lat' => 31.6333, 'lon' => 71.0667],
-            ['name' => 'Darya Khan',            'lat' => 31.7928, 'lon' => 71.1019],
-            ['name' => 'Kaloorkot',             'lat' => 31.4833, 'lon' => 71.2500],
-            ['name' => 'Mankera',               'lat' => 31.3833, 'lon' => 71.4333],
-
-            // Khushab District
-            ['name' => 'Khushab',               'lat' => 32.2944, 'lon' => 72.3497],
-            ['name' => 'Noorpur Thal',          'lat' => 32.1000, 'lon' => 71.9000],
-            ['name' => 'Quaidabad',             'lat' => 32.3333, 'lon' => 72.0667],
-
-            // Mianwali District
-            ['name' => 'Mianwali',              'lat' => 32.5838, 'lon' => 71.5436],
-            ['name' => 'Isakhel',               'lat' => 32.8511, 'lon' => 71.9942],
-            ['name' => 'Piplan',                'lat' => 32.2000, 'lon' => 71.3500],
-
-            // Sargodha District
-            ['name' => 'Sargodha',              'lat' => 32.0825, 'lon' => 72.6691],
-            ['name' => 'Bhalwal',               'lat' => 32.2654, 'lon' => 72.9054],
-            ['name' => 'Bhera',                 'lat' => 32.4764, 'lon' => 72.9064],
-            ['name' => 'Kot Momin',             'lat' => 32.1833, 'lon' => 72.8833],
-            ['name' => 'Sahiwal (Sargodha)',    'lat' => 31.7667, 'lon' => 72.3667],
-            ['name' => 'Shahpur',               'lat' => 32.2866, 'lon' => 72.4303],
-            ['name' => 'Sillanwali',            'lat' => 32.0167, 'lon' => 72.4500],
-        ];
+        $this->command->info('Seeding Punjab cities & towns (' . count($this->cities()) . ' total)...');
 
         $saved = 0;
-
-        foreach ($tehsils as $tehsil) {
+        foreach ($this->cities() as $city) {
             City::create([
-                'name'     => $tehsil['name'],
+                'name'     => $city['name'],
                 'province' => 'Punjab',
-                'lat'      => $tehsil['lat'],
-                'lon'      => $tehsil['lon'],
+                'lat'      => $city['lat'],
+                'lon'      => $city['lon'],
             ]);
-
             $saved++;
-            $this->command->line("  ✓ [{$saved}] {$tehsil['name']} (lat:{$tehsil['lat']}, lon:{$tehsil['lon']})");
         }
 
-        $this->command->info("✅ Done — {$saved} cities inserted.");
+        $this->command->info("✅ Done — {$saved} Punjab cities inserted.");
+    }
+
+    private function cities(): array
+    {
+        return [
+            ['name' => 'Ahmadpur East',                    'lat' => 29.14269, 'lon' => 71.25771],
+            ['name' => 'Ahmadpur Sial',                    'lat' => 30.67791, 'lon' => 71.74344],
+            ['name' => 'Alahabad',                         'lat' => 30.87696, 'lon' => 74.05524],
+            ['name' => 'Alipur',                           'lat' => 29.38242, 'lon' => 70.91106],
+            ['name' => 'Alipur Chatha',                    'lat' => 32.3333, 'lon' => 74.0167],
+            ['name' => 'Arifwala',                         'lat' => 30.29058, 'lon' => 73.06574],
+            ['name' => 'Athara Hazari',                    'lat' => 31.5, 'lon' => 72.0167],
+            ['name' => 'Attock',                           'lat' => 33.76671, 'lon' => 72.35977],
+            ['name' => 'Baddomalhi',                       'lat' => 31.99042, 'lon' => 74.6641],
+            ['name' => 'Bahawalnagar',                     'lat' => 29.99835, 'lon' => 73.25272],
+            ['name' => 'Bahawalpur',                       'lat' => 29.39779, 'lon' => 71.6752],
+            ['name' => 'Bakhri Ahmad Khan',                'lat' => 30.73586, 'lon' => 70.83796],
+            ['name' => 'Banian',                           'lat' => 32.61799, 'lon' => 73.99235],
+            ['name' => 'Basirpur',                         'lat' => 30.57759, 'lon' => 73.83912],
+            ['name' => 'Basra',                            'lat' => 32.36637, 'lon' => 72.69836],
+            ['name' => 'Basti Dosa',                       'lat' => 30.78769, 'lon' => 70.86853],
+            ['name' => 'Begowala',                         'lat' => 32.43816, 'lon' => 74.26794],
+            ['name' => 'Bhagowal',                         'lat' => 32.43751, 'lon' => 74.66939],
+            ['name' => 'Bhagwal',                          'lat' => 32.82111, 'lon' => 73.95528],
+            ['name' => 'Bhakkar',                          'lat' => 31.62685, 'lon' => 71.06471],
+            ['name' => 'Bhalwal',                          'lat' => 32.26576, 'lon' => 72.89809],
+            ['name' => 'Bhaun',                            'lat' => 32.86048, 'lon' => 72.75677],
+            ['name' => 'Bhawana',                          'lat' => 31.56884, 'lon' => 72.64917],
+            ['name' => 'Bhera',                            'lat' => 32.48206, 'lon' => 72.90865],
+            ['name' => 'Bhopalwala',                       'lat' => 32.42968, 'lon' => 74.3635],
+            ['name' => 'Bhowana',                          'lat' => 31.5597, 'lon' => 72.6503],
+            ['name' => 'Burewala',                         'lat' => 30.16667, 'lon' => 72.65],
+            ['name' => 'Chak Azam Sahu',                   'lat' => 30.75202, 'lon' => 73.02834],
+            ['name' => 'Chak Jhumra',                      'lat' => 31.56808, 'lon' => 73.18317],
+            ['name' => 'Chak Pindi',                       'lat' => 32.59677, 'lon' => 73.97301],
+            ['name' => 'Chakwal',                          'lat' => 32.93286, 'lon' => 72.85394],
+            ['name' => 'Chaubara',                         'lat' => 30.7667, 'lon' => 71.0333],
+            ['name' => 'Chawinda',                         'lat' => 32.34434, 'lon' => 74.70507],
+            ['name' => 'Chichawatni',                      'lat' => 30.5301, 'lon' => 72.69155],
+            ['name' => 'Chiniot',                          'lat' => 31.72091, 'lon' => 72.97836],
+            ['name' => 'Chishtian',                        'lat' => 29.79713, 'lon' => 72.85772],
+            ['name' => 'Choa Saidan Shah',                 'lat' => 32.71962, 'lon' => 72.98625],
+            ['name' => 'Chowk Sarwar Shaheed',             'lat' => 30.5667, 'lon' => 71.0167],
+            ['name' => 'Chuhar Kana',                      'lat' => 31.75, 'lon' => 73.8],
+            ['name' => 'Chunian',                          'lat' => 30.96621, 'lon' => 73.97908],
+            ['name' => 'Daira Din Panah',                  'lat' => 30.57053, 'lon' => 70.93722],
+            ['name' => 'Dajal',                            'lat' => 29.55769, 'lon' => 70.37614],
+            ['name' => 'Dandot RS',                        'lat' => 32.64167, 'lon' => 72.975],
+            ['name' => 'Darya Khan',                       'lat' => 31.78447, 'lon' => 71.10197],
+            ['name' => 'Daska',                            'lat' => 32.32422, 'lon' => 74.35039],
+            ['name' => 'Daud Khel',                        'lat' => 32.87533, 'lon' => 71.57118],
+            ['name' => 'Daultala',                         'lat' => 33.19282, 'lon' => 73.14099],
+            ['name' => 'Depalpur',                         'lat' => 30.7111, 'lon' => 73.1381],
+            ['name' => 'Dera Ghazi Khan',                  'lat' => 30.04587, 'lon' => 70.64029],
+            ['name' => 'Dhanot',                           'lat' => 29.57991, 'lon' => 71.75213],
+            ['name' => 'Dhaunkal',                         'lat' => 32.40613, 'lon' => 74.13706],
+            ['name' => 'Dijkot',                           'lat' => 31.21735, 'lon' => 72.99621],
+            ['name' => 'Dina',                             'lat' => 32.7667, 'lon' => 73.5167],
+            ['name' => 'Dinan Bashnoian Wala',             'lat' => 29.76584, 'lon' => 73.26557],
+            ['name' => 'Dinga',                            'lat' => 32.64101, 'lon' => 73.72039],
+            ['name' => 'Dipalpur',                         'lat' => 30.66984, 'lon' => 73.65306],
+            ['name' => 'Dittewal',                         'lat' => 32.5969, 'lon' => 73.9905],
+            ['name' => 'Dullewala',                        'lat' => 31.83439, 'lon' => 71.43639],
+            ['name' => 'Dunga Bunga',                      'lat' => 29.74975, 'lon' => 73.24294],
+            ['name' => 'Dunyapur',                         'lat' => 29.80275, 'lon' => 71.74344],
+            ['name' => 'Eminabad',                         'lat' => 32.04237, 'lon' => 74.25996],
+            ['name' => 'Faisalabad',                       'lat' => 31.41554, 'lon' => 73.08969],
+            ['name' => 'Faqirwali',                        'lat' => 29.46799, 'lon' => 73.03489],
+            ['name' => 'Faruka',                           'lat' => 31.88642, 'lon' => 72.41362],
+            ['name' => 'Fateh Jang',                       'lat' => 33.5617, 'lon' => 72.6428],
+            ['name' => 'Fatehjang',                        'lat' => 33.56492, 'lon' => 72.64281],
+            ['name' => 'Fatehpur',                         'lat' => 31.17772, 'lon' => 71.2048],
+            ['name' => 'Fazilpur',                         'lat' => 32.17629, 'lon' => 75.06583],
+            ['name' => 'Ferozewala',                       'lat' => 31.7667, 'lon' => 74.15],
+            ['name' => 'Ferozwala',                        'lat' => 31.7667, 'lon' => 74.1667],
+            ['name' => 'Fort Abbas',                       'lat' => 29.19344, 'lon' => 72.85525],
+            ['name' => 'Garh Maharaja',                    'lat' => 30.83383, 'lon' => 71.90491],
+            ['name' => 'Gojra',                            'lat' => 31.14926, 'lon' => 72.68323],
+            ['name' => 'Gujar Khan',                       'lat' => 33.25411, 'lon' => 73.30433],
+            ['name' => 'Gujranwala',                       'lat' => 32.15567, 'lon' => 74.18705],
+            ['name' => 'Gujrat',                           'lat' => 32.5742, 'lon' => 74.07542],
+            ['name' => 'Hadali',                           'lat' => 32.64043, 'lon' => 74.56898],
+            ['name' => 'Hafizabad',                        'lat' => 32.07095, 'lon' => 73.68802],
+            ['name' => 'Harappa',                          'lat' => 30.63251, 'lon' => 72.87032],
+            ['name' => 'Harnoli',                          'lat' => 32.27871, 'lon' => 71.55429],
+            ['name' => 'Haroonabad',                       'lat' => 29.61206, 'lon' => 73.13802],
+            ['name' => 'Hasilpur',                         'lat' => 29.69221, 'lon' => 72.54566],
+            ['name' => 'Hassan Abdal',                     'lat' => 33.8197, 'lon' => 72.6889],
+            ['name' => 'Haveli Lakha',                     'lat' => 30.45097, 'lon' => 73.69371],
+            ['name' => 'Hazro',                            'lat' => 33.9099, 'lon' => 72.49179],
+            ['name' => 'Hujra Shah Muqim',                 'lat' => 30.74168, 'lon' => 73.82327],
+            ['name' => 'Isakhel',                          'lat' => 32.8511, 'lon' => 71.9942],
+            ['name' => 'Jahanian',                         'lat' => 30.03928, 'lon' => 71.8167],
+            ['name' => 'Jahanian Shah',                    'lat' => 31.80541, 'lon' => 72.2774],
+            ['name' => 'Jalalpur Jattan',                  'lat' => 32.64118, 'lon' => 74.20561],
+            ['name' => 'Jalalpur Pirwala',                 'lat' => 29.5051, 'lon' => 71.22202],
+            ['name' => 'Jampur',                           'lat' => 29.64235, 'lon' => 70.59518],
+            ['name' => 'Jand',                             'lat' => 33.43304, 'lon' => 72.01877],
+            ['name' => 'Jandiala Sher Khan',               'lat' => 31.82098, 'lon' => 73.91815],
+            ['name' => 'Jaranwala',                        'lat' => 31.3332, 'lon' => 73.41868],
+            ['name' => 'Jatoi',                            'lat' => 29.99, 'lon' => 70.85],
+            ['name' => 'Jatoi Shimali',                    'lat' => 29.51827, 'lon' => 70.84474],
+            ['name' => 'Jauharabad',                       'lat' => 32.29016, 'lon' => 72.28182],
+            ['name' => 'Jhang',                            'lat' => 31.30568, 'lon' => 72.32594],
+            ['name' => 'Jhang Sadr',                       'lat' => 31.26981, 'lon' => 72.31687],
+            ['name' => 'Jhawarian',                        'lat' => 32.36192, 'lon' => 72.62275],
+            ['name' => 'Jhelum',                           'lat' => 32.93448, 'lon' => 73.73102],
+            ['name' => 'Kabirwala',                        'lat' => 30.40472, 'lon' => 71.86269],
+            ['name' => 'Kahna Nau',                        'lat' => 31.36709, 'lon' => 74.36899],
+            ['name' => 'Kahuta',                           'lat' => 33.59183, 'lon' => 73.38736],
+            ['name' => 'Kalabagh',                         'lat' => 32.96164, 'lon' => 71.54638],
+            ['name' => 'Kalaswala',                        'lat' => 32.20081, 'lon' => 74.64858],
+            ['name' => 'Kaleke Mandi',                     'lat' => 31.97597, 'lon' => 73.59999],
+            ['name' => 'Kallar Kahar',                     'lat' => 32.77998, 'lon' => 72.69793],
+            ['name' => 'Kalur Kot',                        'lat' => 32.15512, 'lon' => 71.26631],
+            ['name' => 'Kamalia',                          'lat' => 30.72708, 'lon' => 72.64607],
+            ['name' => 'Kamar Mushani',                    'lat' => 32.84318, 'lon' => 71.36192],
+            ['name' => 'Kamoke',                           'lat' => 31.97526, 'lon' => 74.22304],
+            ['name' => 'Kamra',                            'lat' => 33.74698, 'lon' => 73.51229],
+            ['name' => 'Kanganpur',                        'lat' => 30.76468, 'lon' => 74.12286],
+            ['name' => 'Karor',                            'lat' => 31.2246, 'lon' => 70.95153],
+            ['name' => 'Karor Lal Esan',                   'lat' => 31.2242, 'lon' => 70.9519],
+            ['name' => 'Kasur',                            'lat' => 31.11866, 'lon' => 74.45025],
+            ['name' => 'Kaure Shah Zerin',                 'lat' => 30.84219, 'lon' => 73.1078],
+            ['name' => 'Kehror Pakka',                     'lat' => 29.6243, 'lon' => 71.91437],
+            ['name' => 'Keshupur',                         'lat' => 32.26, 'lon' => 72.5],
+            ['name' => 'Khairpur Tamewah',                 'lat' => 29.58139, 'lon' => 72.23804],
+            ['name' => 'Khandowa',                         'lat' => 32.74255, 'lon' => 72.73478],
+            ['name' => 'Khanewal',                         'lat' => 30.30173, 'lon' => 71.93212],
+            ['name' => 'Khangah Dogran',                   'lat' => 31.83294, 'lon' => 73.62213],
+            ['name' => 'Khangarh',                         'lat' => 29.91446, 'lon' => 71.16067],
+            ['name' => 'Khanpur',                          'lat' => 28.64739, 'lon' => 70.65694],
+            ['name' => 'Kharian',                          'lat' => 32.81612, 'lon' => 73.88697],
+            ['name' => 'Khewra',                           'lat' => 32.6491, 'lon' => 73.01059],
+            ['name' => 'Khurarianwala',                    'lat' => 31.49936, 'lon' => 73.26763],
+            ['name' => 'Khushab',                          'lat' => 32.29667, 'lon' => 72.3525],
+            ['name' => 'Kot Addu',                         'lat' => 30.46907, 'lon' => 70.96699],
+            ['name' => 'Kot Chutta',                       'lat' => 30.4667, 'lon' => 70.5333],
+            ['name' => 'Kot Ghulam Muhammad',              'lat' => 32.33311, 'lon' => 74.54694],
+            ['name' => 'Kot Momin',                        'lat' => 32.1883, 'lon' => 73.0299],
+            ['name' => 'Kot Mumin',                        'lat' => 32.18843, 'lon' => 73.02987],
+            ['name' => 'Kot Radha Kishan',                 'lat' => 31.17068, 'lon' => 74.10126],
+            ['name' => 'Kot Rajkour',                      'lat' => 32.41208, 'lon' => 74.62855],
+            ['name' => 'Kot Samaba',                       'lat' => 28.55207, 'lon' => 70.46837],
+            ['name' => 'Kot Sultan',                       'lat' => 30.7737, 'lon' => 70.93125],
+            ['name' => 'Kotli Loharan',                    'lat' => 32.58893, 'lon' => 74.49466],
+            ['name' => 'Kotli Sattian',                    'lat' => 33.6667, 'lon' => 73.3833],
+            ['name' => 'Kundian',                          'lat' => 32.45775, 'lon' => 71.47892],
+            ['name' => 'Kunjah',                           'lat' => 32.52982, 'lon' => 73.97486],
+            ['name' => 'Kuri Dulal',                       'lat' => 33.38437, 'lon' => 73.26367],
+            ['name' => 'Ladhewala Waraich',                'lat' => 32.15692, 'lon' => 74.11564],
+            ['name' => 'Lahore',                           'lat' => 31.558, 'lon' => 74.35071],
+            ['name' => 'Lala Musa',                        'lat' => 32.70138, 'lon' => 73.95746],
+            ['name' => 'Lalian',                           'lat' => 31.82462, 'lon' => 72.80116],
+            ['name' => 'Lawa',                             'lat' => 32.69683, 'lon' => 71.93266],
+            ['name' => 'Layyah',                           'lat' => 30.96128, 'lon' => 70.93904],
+            ['name' => 'Liaqatpur',                        'lat' => 28.9233, 'lon' => 70.9058],
+            ['name' => 'Liliani',                          'lat' => 32.20393, 'lon' => 72.9512],
+            ['name' => 'Lodhran',                          'lat' => 29.5339, 'lon' => 71.63244],
+            ['name' => 'Lollianwala',                      'lat' => 32.66457, 'lon' => 73.55776],
+            ['name' => 'Mailsi',                           'lat' => 29.80123, 'lon' => 72.17398],
+            ['name' => 'Malakwal',                         'lat' => 32.55449, 'lon' => 73.21274],
+            ['name' => 'Mamu Kanjan',                      'lat' => 30.83044, 'lon' => 72.79943],
+            ['name' => 'Mananwala',                        'lat' => 31.58803, 'lon' => 73.68927],
+            ['name' => 'Mandi Bahauddin',                  'lat' => 32.58704, 'lon' => 73.49123],
+            ['name' => 'Mangla',                           'lat' => 31.89306, 'lon' => 72.38167],
+            ['name' => 'Manhala',                          'lat' => 31.53333, 'lon' => 74.55],
+            ['name' => 'Mankera',                          'lat' => 31.38771, 'lon' => 71.44047],
+            ['name' => 'Mehmand Chak',                     'lat' => 32.78518, 'lon' => 73.82306],
+            ['name' => 'Mian Channu',                      'lat' => 30.44067, 'lon' => 72.35679],
+            ['name' => 'Mianwali',                         'lat' => 32.57756, 'lon' => 71.52847],
+            ['name' => 'Minchinabad',                      'lat' => 30.16356, 'lon' => 73.56858],
+            ['name' => 'Mirdad Muafi',                     'lat' => 30.67676, 'lon' => 72.92855],
+            ['name' => 'Mitha Tiwana',                     'lat' => 32.2454, 'lon' => 72.10615],
+            ['name' => 'Moza Shahwala',                    'lat' => 30.80563, 'lon' => 70.84911],
+            ['name' => 'Mughalabad',                       'lat' => 33.89731, 'lon' => 73.42545],
+            ['name' => 'Muhammad Pur',                     'lat' => 30.71015, 'lon' => 73.01782],
+            ['name' => 'Multan',                           'lat' => 30.19679, 'lon' => 71.47824],
+            ['name' => 'Muridke',                          'lat' => 31.80258, 'lon' => 74.25772],
+            ['name' => 'Murree',                           'lat' => 33.90836, 'lon' => 73.3903],
+            ['name' => 'Mustafabad',                       'lat' => 30.89222, 'lon' => 73.49889],
+            ['name' => 'Muzaffargarh',                     'lat' => 30.07258, 'lon' => 71.19379],
+            ['name' => 'Nankana Sahib',                    'lat' => 31.4501, 'lon' => 73.70653],
+            ['name' => 'Narang Mandi',                     'lat' => 31.90376, 'lon' => 74.51587],
+            ['name' => 'Narowal',                          'lat' => 32.10197, 'lon' => 74.87303],
+            ['name' => 'Narwanwala',                       'lat' => 31.3919, 'lon' => 73.57885],
+            ['name' => 'Nazir Town',                       'lat' => 33.30614, 'lon' => 73.4833],
+            ['name' => 'Noorpur Thal',                     'lat' => 32.1, 'lon' => 71.9],
+            ['name' => 'Nowshera Virkan',                  'lat' => 31.96258, 'lon' => 73.97117],
+            ['name' => 'Okara',                            'lat' => 30.81029, 'lon' => 73.45155],
+            ['name' => 'Pakpattan',                        'lat' => 30.34314, 'lon' => 73.38944],
+            ['name' => 'Pasrur',                           'lat' => 32.26286, 'lon' => 74.66327],
+            ['name' => 'Pattoki',                          'lat' => 31.02021, 'lon' => 73.85333],
+            ['name' => 'Phalia',                           'lat' => 32.43104, 'lon' => 73.579],
+            ['name' => 'Phool Nagar',                      'lat' => 31.2024, 'lon' => 73.94857],
+            ['name' => 'Pind Dadan Khan',                  'lat' => 32.58662, 'lon' => 73.04456],
+            ['name' => 'Pindi Bhattian',                   'lat' => 31.89844, 'lon' => 73.27339],
+            ['name' => 'Pindi Gheb',                       'lat' => 33.24095, 'lon' => 72.2648],
+            ['name' => 'Piplan',                           'lat' => 32.2, 'lon' => 71.35],
+            ['name' => 'Pir Mahal',                        'lat' => 30.76663, 'lon' => 72.43455],
+            ['name' => 'Qabula',                           'lat' => 30.17784, 'lon' => 73.0651],
+            ['name' => 'Qadirpur Ran',                     'lat' => 30.29184, 'lon' => 71.67164],
+            ['name' => 'Quaidabad',                        'lat' => 32.3333, 'lon' => 72.0667],
+            ['name' => 'Rabwah',                           'lat' => 31.75511, 'lon' => 72.91403],
+            ['name' => 'Rahim Yar Khan',                   'lat' => 28.41987, 'lon' => 70.30345],
+            ['name' => 'Raiwind',                          'lat' => 31.24895, 'lon' => 74.21534],
+            ['name' => 'Raja Jang',                        'lat' => 31.22078, 'lon' => 74.25483],
+            ['name' => 'Rajanpur',                         'lat' => 29.10408, 'lon' => 70.32969],
+            ['name' => 'Rasulnagar',                       'lat' => 32.32794, 'lon' => 73.7804],
+            ['name' => 'Rawalpindi',                       'lat' => 33.59733, 'lon' => 73.0479],
+            ['name' => 'Renala Khurd',                     'lat' => 30.87878, 'lon' => 73.59857],
+            ['name' => 'Rojhan',                           'lat' => 28.68735, 'lon' => 69.9535],
+            ['name' => 'Sadiqabad',                        'lat' => 28.3091, 'lon' => 70.12652],
+            ['name' => 'Sahiwal',                          'lat' => 31.97386, 'lon' => 72.33109],
+            ['name' => 'Sahiwal',                          'lat' => 30.66595, 'lon' => 73.10186],
+            ['name' => 'Sambrial',                         'lat' => 32.47835, 'lon' => 74.35338],
+            ['name' => 'Sangla Hill',                      'lat' => 31.71667, 'lon' => 73.38333],
+            ['name' => 'Sanjwal',                          'lat' => 33.76105, 'lon' => 72.43315],
+            ['name' => 'Sarai Alamgir',                    'lat' => 32.90495, 'lon' => 73.75518],
+            ['name' => 'Sarai Sidhu',                      'lat' => 30.59476, 'lon' => 71.9699],
+            ['name' => 'Sargodha',                         'lat' => 32.08586, 'lon' => 72.67418],
+            ['name' => 'Shahkot',                          'lat' => 31.5709, 'lon' => 73.48531],
+            ['name' => 'Shahpur',                          'lat' => 32.2682, 'lon' => 72.46884],
+            ['name' => 'Shahr Sultan',                     'lat' => 29.57517, 'lon' => 71.02209],
+            ['name' => 'Shakargarh',                       'lat' => 32.26361, 'lon' => 75.16008],
+            ['name' => 'Sharaqpur',                        'lat' => 31.46116, 'lon' => 74.10091],
+            ['name' => 'Sharifabad',                       'lat' => 33.4341, 'lon' => 73.36276],
+            ['name' => 'Sheikhupura',                      'lat' => 31.71287, 'lon' => 73.98556],
+            ['name' => 'Shorkot',                          'lat' => 30.9667, 'lon' => 72.0],
+            ['name' => 'Shujabad',                         'lat' => 29.88092, 'lon' => 71.29344],
+            ['name' => 'Sialkot',                          'lat' => 32.49268, 'lon' => 74.53134],
+            ['name' => 'Sillanwali',                       'lat' => 31.82539, 'lon' => 72.54064],
+            ['name' => 'Sodhri',                           'lat' => 32.46211, 'lon' => 74.18207],
+            ['name' => 'Sook Kalan',                       'lat' => 32.59702, 'lon' => 74.14652],
+            ['name' => 'Sukheke Mandi',                    'lat' => 31.86541, 'lon' => 73.50875],
+            ['name' => 'Surkhpur',                         'lat' => 32.71816, 'lon' => 74.44773],
+            ['name' => 'Talagang',                         'lat' => 32.92766, 'lon' => 72.41594],
+            ['name' => 'Talamba',                          'lat' => 30.52693, 'lon' => 72.24079],
+            ['name' => 'Tandlianwala',                     'lat' => 31.03359, 'lon' => 73.13268],
+            ['name' => 'Taunsa',                           'lat' => 30.70358, 'lon' => 70.65054],
+            ['name' => 'Taxila',                           'lat' => 33.7464, 'lon' => 72.8419],
+            ['name' => 'Thamewali',                        'lat' => 32.78357, 'lon' => 71.7808],
+            ['name' => 'Tibbi Jay Singh',                  'lat' => 30.87699, 'lon' => 73.21607],
+            ['name' => 'Toba Tek Singh',                   'lat' => 30.97127, 'lon' => 72.48275],
+            ['name' => 'Vehari',                           'lat' => 30.0445, 'lon' => 72.3556],
+            ['name' => 'Wah Cantt',                        'lat' => 33.77094, 'lon' => 72.75116],
+            ['name' => 'Wazirabad',                        'lat' => 32.44324, 'lon' => 74.12],
+            ['name' => 'Yazman',                           'lat' => 29.12122, 'lon' => 71.74459],
+            ['name' => 'Zafarwal',                         'lat' => 32.34464, 'lon' => 74.8999],
+            ['name' => 'Zahir Pir',                        'lat' => 28.81284, 'lon' => 70.52341],
+        ];
     }
 }

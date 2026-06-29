@@ -118,6 +118,45 @@ class RidePostAction extends BaseAction
      * pending/accepted bookings and notify those riders, then mark the post
      * cancelled. Preserves history and never silently drops a confirmed rider.
      */
+
+    /** Admin cancels any ride post — cancels active bookings, notifies riders + driver. */
+    public function adminCancel(int $id): bool
+    {
+        return DB::transaction(function () use ($id) {
+            $post = $this->repository->findOrFail($id);
+
+            if (in_array($post->status, ['completed', 'cancelled'])) {
+                throw new ApiException('This ride is already closed.', 422);
+            }
+
+            $active = $this->bookings->list(
+                callback: fn($q) => $q->where('ride_post_id', $id)->whereIn('status', ['pending', 'accepted'])
+            );
+            foreach ($active as $b) {
+                $this->bookings->update($b->id, ['status' => 'cancelled']);
+                $this->notifications->push(
+                    $b->passenger_id,
+                    'ride_cancelled',
+                    'Ride cancelled',
+                    'Your booked ride was cancelled by support.',
+                    ['ride_post_id' => $id, 'booking_id' => $b->id],
+                );
+            }
+
+            $this->repository->update($id, ['status' => 'cancelled']);
+            $this->notifications->push(
+                $post->driver_id,
+                'ride_post_cancelled',
+                'Ride cancelled',
+                'Your ride post was cancelled by support.',
+                ['ride_post_id' => $id],
+            );
+            $this->chat->closeForRidePost($id);
+
+            return true;
+        });
+    }
+
     public function destroy($companyId, $id, $options = [])
     {
         return DB::transaction(function () use ($companyId, $id) {

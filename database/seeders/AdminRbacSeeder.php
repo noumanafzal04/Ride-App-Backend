@@ -15,6 +15,7 @@ class AdminRbacSeeder extends Seeder
         // ── Permission catalog (module → actions) ──
         $catalog = [
             'users'       => ['view', 'update', 'delete'],   // app users + profile verification
+            'rides'       => ['view', 'update'],             // ride posts (list + admin cancel)
             'inspections' => ['view', 'update', 'delete'],
             'providers'   => ['view', 'update'],             // service-provider verification
             'listings'    => ['view', 'update'],             // marketplace car listings

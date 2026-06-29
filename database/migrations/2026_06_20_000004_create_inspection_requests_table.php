@@ -16,6 +16,8 @@ return new class extends Migration
     {
         Schema::create('inspection_requests', function (Blueprint $table) {
             $table->id();
+            // Public tracking code — lets guests check status via the code we email them.
+            $table->string('tracking_token', 40)->nullable()->unique();
             // null = guest submission (reached only by phone).
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
 
