@@ -13,9 +13,12 @@ class CloseStaleRides extends Command
 
     public function handle(BookingAction $action): int
     {
-        $count = $action->autoCloseStale((int) $this->option('hours'));
+        // 1) Cancel posts that hit departure with no accepted passenger (no grace).
+        $cancelled = $action->cancelEmptyExpired();
+        // 2) Auto-complete rides that carried passengers but were left open past grace.
+        $closed = $action->autoCloseStale((int) $this->option('hours'));
 
-        $this->info("Closed {$count} stale ride(s).");
+        $this->info("Cancelled {$cancelled} empty ride(s), closed {$closed} stale ride(s).");
 
         return self::SUCCESS;
     }

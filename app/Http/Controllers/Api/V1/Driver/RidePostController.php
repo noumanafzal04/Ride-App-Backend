@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Driver;
 
 use App\Actions\Driver\RidePostAction;
+use App\Actions\Ride\BookingAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Driver\RidePostRequest;
 use App\Http\Resources\Api\V1\Driver\RidePostResource;
@@ -13,10 +14,17 @@ class RidePostController extends Controller
 {
     public $resourceName = 'ride_post';
 
-    public function __construct(protected RidePostAction $action) {}
+    public function __construct(
+        protected RidePostAction $action,
+        protected BookingAction $bookings,
+    ) {}
 
     public function index(Request $request)
     {
+        // On-app-open cleanup: cancel this driver's posts that hit departure with
+        // no accepted passenger, so a dead post is never shown as still "active".
+        $this->bookings->cancelEmptyExpired(auth()->id());
+
         $posts = $this->action->all(auth()->id(), $request->all());
 
         return RidePostResource::collection($posts)

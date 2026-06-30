@@ -118,6 +118,51 @@ class BookingAction extends BaseAction
     }
 
     /**
+     * Cancel ride posts whose departure has passed with no accepted passenger —
+     * immediately, no grace period. A dead post should never linger as "active".
+     * Pass $driverId to clean up just one driver's posts (called when the driver
+     * opens their rides, so it reflects the moment they come to the app).
+     * Returns how many were cancelled.
+     */
+    public function cancelEmptyExpired(?int $driverId = null): int
+    {
+        $posts = $this->ridePostRepository->emptyExpiredRides($driverId);
+
+        foreach ($posts as $post) {
+            DB::transaction(function () use ($post) {
+                // Reject any still-pending requests (none were ever accepted).
+                $pending = $this->repository->list(
+                    callback: fn($q) => $q
+                        ->where('ride_post_id', $post->id)
+                        ->where('status', 'pending')
+                );
+                foreach ($pending as $req) {
+                    $this->repository->update($req->id, ['status' => 'rejected']);
+                    $this->notifications->push(
+                        $req->passenger_id,
+                        'booking_rejected',
+                        'Request not accepted',
+                        'The ride departed before your request was accepted.',
+                        ['ride_post_id' => $post->id, 'booking_id' => $req->id],
+                    );
+                }
+
+                $this->ridePostRepository->update($post->id, ['status' => 'cancelled']);
+                $this->notifications->push(
+                    $post->driver_id,
+                    'ride_post_cancelled',
+                    'Ride post cancelled',
+                    'Your ride was cancelled automatically — no bookings were accepted before departure.',
+                    ['ride_post_id' => $post->id],
+                );
+                $this->chat->closeForRidePost($post->id);
+            });
+        }
+
+        return $posts->count();
+    }
+
+    /**
      * Settle a ride: complete its accepted bookings (count a trip each), reject
      * any leftover pending requests, and close the post. A ride nobody joined is
      * marked cancelled rather than completed.

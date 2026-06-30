@@ -113,9 +113,27 @@ class RidePostRepository extends BaseRepository
      */
     public function staleOpenRides(int $graceHours)
     {
+        // Only rides that actually carried passengers get auto-completed after the
+        // grace window. Empty ones are cancelled immediately (emptyExpiredRides).
         return $this->model->newQuery()
             ->whereIn('status', ['active', 'full', 'in_progress'])
             ->where('departure_at', '<', now()->subHours($graceHours))
+            ->whereHas('bookings', fn($q) => $q->where('status', 'accepted'))
+            ->get();
+    }
+
+    /**
+     * Posts whose departure has passed with NO accepted passenger — these are
+     * dead and should be cancelled the moment departure arrives (no grace).
+     * Scoped to one driver when $driverId is given (cheap on-app-open cleanup).
+     */
+    public function emptyExpiredRides(?int $driverId = null)
+    {
+        return $this->model->newQuery()
+            ->whereIn('status', ['active', 'full'])
+            ->where('departure_at', '<', now())
+            ->when($driverId, fn($q) => $q->where('driver_id', $driverId))
+            ->whereDoesntHave('bookings', fn($q) => $q->where('status', 'accepted'))
             ->get();
     }
 
