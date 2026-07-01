@@ -21,12 +21,13 @@ class RentalCar extends Model
         'user_id', 'listing_type', 'status', 'make', 'model', 'variant', 'year', 'category', 'seats',
         'transmission', 'fuel_type', 'color', 'rental_type', 'price_per_day', 'price_per_day_self',
         'deposit', 'min_days', 'city_id', 'area', 'description', 'features',
-        'inspection_request_id', 'is_featured', 'views_count',
+        'inspection_request_id', 'is_featured', 'featured_until', 'views_count',
     ];
 
     protected $casts = [
         'features'           => 'array',
         'is_featured'        => 'boolean',
+        'featured_until'     => 'datetime',
         'price_per_day'      => 'decimal:2',
         'price_per_day_self' => 'decimal:2',
         'deposit'            => 'decimal:2',

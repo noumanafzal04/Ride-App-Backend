@@ -61,7 +61,8 @@ class CarListingResource extends ApiResource
                 'score' => $insp->overall_score,
             ] : null,
 
-            'is_featured'  => (bool) $this->is_featured,
+            'is_featured'    => (bool) $this->is_featured && ($this->featured_until === null || $this->featured_until->isFuture()),
+            'featured_until' => $this->featured_until?->toISOString(),
             'is_mine'      => $user ? (int) $user->id === (int) $this->user_id : false,
 
             'seller'       => $this->whenLoaded('seller', fn() => [

@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             // ── Billing (order matters) ──
             BillingSeeder::class,           // per-module free limits + sample plans (billing_plans)
             RidePassSeeder::class,          // overrides RIDE → 2 free posts + 24h pass (must run AFTER BillingSeeder)
+            FeatureSettingSeeder::class,    // paid "feature a listing" price + duration per module
         ]);
 
         // NOTE — intentionally NOT run automatically:

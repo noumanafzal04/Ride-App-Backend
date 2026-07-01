@@ -33,6 +33,13 @@ class RentalCarController extends Controller
         return ApiResponse::success(['models' => $this->action->models()], 'Available models.');
     }
 
+    // Typeahead suggestions for the search box.
+    public function suggest(Request $request)
+    {
+        $items = $this->action->suggest((string) $request->query('q', ''), (int) $request->query('limit', 8));
+        return RentalCarResource::collection($items)->wrapWith('rentals')->message('Suggestions.');
+    }
+
     public function mine()
     {
         return RentalCarResource::collection($this->action->mine(auth()->id()))->wrapWith('rentals')->message('Your rentals.');
@@ -66,5 +73,17 @@ class RentalCarController extends Controller
     {
         $this->action->destroy(auth()->id(), $id);
         return ApiResponse::noContent('Rental removed.');
+    }
+
+    public function featurePricing()
+    {
+        return ApiResponse::success($this->action->featurePricing(), 'Feature pricing.');
+    }
+
+    // Owner pays to feature their rental (marked paid instantly for now).
+    public function feature(int $id)
+    {
+        $car = $this->action->feature(auth()->id(), $id);
+        return (new RentalCarResource($car))->wrapWith('rental')->message('Your rental is now featured.');
     }
 }

@@ -14,3 +14,6 @@ Schedule::command('rides:close-stale')->everyTenMinutes();
 
 // Keep the chat tables lean: drop conversations closed > 30 days ago (messages cascade).
 Schedule::command('chat:purge-closed')->daily();
+
+// Drop the "featured" flag once a paid feature window has ended.
+Schedule::command('features:expire')->hourly();

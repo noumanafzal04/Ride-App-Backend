@@ -21,7 +21,21 @@ class RentalCarAction
         protected AdminNotificationService $adminNotifications,
         protected NotificationService $notifications,
         protected BillingService $billing,
+        protected \App\Services\Feature\FeatureService $feature,
     ) {}
+
+    /** Owner pays to feature their own rental (see FeatureService). */
+    public function feature(int $userId, int $id): RentalCar
+    {
+        $car = $this->ownedOrFail($userId, $id);
+        $this->feature->purchase($userId, $car, \App\Services\Feature\FeatureService::MODULE_RENTAL);
+        return $this->repository->findByIdWithRelations($id);
+    }
+
+    public function featurePricing(): array
+    {
+        return $this->feature->pricing(\App\Services\Feature\FeatureService::MODULE_RENTAL);
+    }
 
     public function browse(array $filters, ?float $nearLat = null, ?float $nearLng = null)
     {
@@ -46,12 +60,21 @@ class RentalCarAction
         return $this->repository->mine($userId);
     }
 
+    /** Typeahead suggestions for the search box. */
+    public function suggest(string $q, int $limit = 8)
+    {
+        return $this->repository->searchSuggestions($q, $limit);
+    }
+
     public function create(int $userId, array $data, array $imageFiles = []): RentalCar
     {
-        $gate = $this->billing->assertCanPost($userId, BillingModule::RENTAL);
+        $isManaged = ($data['listing_type'] ?? RentalCar::TYPE_SELF) === RentalCar::TYPE_MANAGED;
 
-        return DB::transaction(function () use ($userId, $data, $imageFiles, $gate) {
-            $type = ($data['listing_type'] ?? RentalCar::TYPE_SELF) === RentalCar::TYPE_MANAGED ? RentalCar::TYPE_MANAGED : RentalCar::TYPE_SELF;
+        // Managed ("EZRide lists it for you") requests are free leads — skip the paywall.
+        $gate = $isManaged ? null : $this->billing->assertCanPost($userId, BillingModule::RENTAL);
+
+        return DB::transaction(function () use ($userId, $data, $imageFiles, $gate, $isManaged) {
+            $type = $isManaged ? RentalCar::TYPE_MANAGED : RentalCar::TYPE_SELF;
             $status = $type === RentalCar::TYPE_MANAGED ? RentalCar::STATUS_PENDING : RentalCar::STATUS_ACTIVE;
 
             $car = $this->repository->create([
@@ -89,7 +112,9 @@ class RentalCarAction
                     "{$car->make} {$car->model} submitted for EZRide to manage.", ['rental_car_id' => $car->id]);
             }
 
-            $this->billing->consume($userId, BillingModule::RENTAL, $gate);
+            if (!$isManaged) {
+                $this->billing->consume($userId, BillingModule::RENTAL, $gate);
+            }
 
             return $this->repository->findByIdWithRelations($car->id);
         });

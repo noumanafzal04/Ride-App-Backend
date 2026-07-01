@@ -6,8 +6,12 @@ use Illuminate\Support\Facades\Route;
 // Buy/Sell car marketplace (auth:api — required by parent group)
 Route::get('car-listings', [CarListingController::class, 'index']);          // browse + filters + near
 Route::get('car-listings/mine', [CarListingController::class, 'mine']);      // my listings (any status)
+Route::get('car-listings/feature-pricing', [CarListingController::class, 'featurePricing']); // feature price/duration
+Route::get('car-listings/suggest', [CarListingController::class, 'suggest']);                // typeahead suggestions
+Route::get('car-listings/seller/{userId}', [CarListingController::class, 'seller'])->whereNumber('userId'); // public seller profile
 Route::get('car-listings/{id}', [CarListingController::class, 'show'])->whereNumber('id');
 Route::post('car-listings', [CarListingController::class, 'store']);         // create (multipart images)
 Route::put('car-listings/{id}', [CarListingController::class, 'update'])->whereNumber('id');
 Route::patch('car-listings/{id}/sold', [CarListingController::class, 'markSold'])->whereNumber('id');
+Route::post('car-listings/{id}/feature', [CarListingController::class, 'feature'])->whereNumber('id'); // pay to feature
 Route::delete('car-listings/{id}', [CarListingController::class, 'destroy'])->whereNumber('id');

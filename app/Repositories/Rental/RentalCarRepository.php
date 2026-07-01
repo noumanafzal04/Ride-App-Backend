@@ -21,6 +21,31 @@ class RentalCarRepository extends BaseRepository
         'inspectionRequest:id,status,overall_grade,overall_score',
     ];
 
+    // "Currently featured" = flag set AND paid window not expired. Floats featured to the top.
+    private const FEATURED_FIRST = '(rental_cars.is_featured = 1 and (rental_cars.featured_until is null or rental_cars.featured_until >= now())) desc';
+
+    // Free-text search: every term must match SOME searchable field (AND across terms, OR across fields).
+    private function applySearch($q, string $raw): void
+    {
+        foreach (preg_split('/\s+/', trim($raw)) as $term) {
+            if ($term === '') continue;
+            $like = '%' . $term . '%';
+            $q->where(function ($w) use ($like) {
+                $w->where('make', 'like', $like)
+                    ->orWhere('model', 'like', $like)
+                    ->orWhere('variant', 'like', $like)
+                    ->orWhere('color', 'like', $like)
+                    ->orWhere('category', 'like', $like)
+                    ->orWhere('transmission', 'like', $like)
+                    ->orWhere('fuel_type', 'like', $like)
+                    ->orWhere('area', 'like', $like)
+                    ->orWhere('description', 'like', $like)
+                    ->orWhere('year', 'like', $like)
+                    ->orWhereHas('city', fn($c) => $c->where('name', 'like', $like));
+            });
+        }
+    }
+
     public function paginatedBrowse(array $filters, ?float $nearLat = null, ?float $nearLng = null)
     {
         return $this->paginatedList(
@@ -30,8 +55,7 @@ class RentalCarRepository extends BaseRepository
                     ->addSelect(DB::raw(self::OWNER_RATING_SQL . ' as owner_rating'));
 
                 if (!empty($filters['q'])) {
-                    $s = $filters['q'];
-                    $q->where(fn($w) => $w->where('make', 'like', "%{$s}%")->orWhere('model', 'like', "%{$s}%"));
+                    $this->applySearch($q, $filters['q']);
                 }
                 if (!empty($filters['category']))    $q->where('category', $filters['category']);
                 if (!empty($filters['city_id']))     $q->where('rental_cars.city_id', $filters['city_id']);
@@ -51,17 +75,18 @@ class RentalCarRepository extends BaseRepository
                 elseif ($sort === 'price_desc') { $q->orderByDesc('price_per_day'); }
                 elseif ($sort === 'rating')     { $q->orderByRaw('owner_rating IS NULL')->orderByDesc('owner_rating'); }
                 elseif ($nearLat !== null && $nearLng !== null && empty($filters['city_id'])) {
+                    // Featured first, then nearest city.
                     $q->leftJoin('cities', 'cities.id', '=', 'rental_cars.city_id')
                         ->addSelect(DB::raw(
                             '( 6371 * acos( least(1, greatest(-1,'
                             . ' cos(radians(' . (float) $nearLat . ')) * cos(radians(cities.lat)) * cos(radians(cities.lon) - radians(' . (float) $nearLng . '))'
                             . ' + sin(radians(' . (float) $nearLat . ')) * sin(radians(cities.lat)) ))) ) AS distance_km'
                         ))
+                        ->orderByRaw(self::FEATURED_FIRST)
                         ->orderByRaw('distance_km IS NULL')
-                        ->orderBy('distance_km')
-                        ->orderByDesc('rental_cars.is_featured');
+                        ->orderBy('distance_km');
                 } else {
-                    $q->orderByDesc('is_featured')->latest('rental_cars.created_at');
+                    $q->orderByRaw(self::FEATURED_FIRST)->latest('rental_cars.created_at');
                 }
             },
             relations: $this->relations,
@@ -76,6 +101,21 @@ class RentalCarRepository extends BaseRepository
                 ->addSelect(DB::raw(self::OWNER_RATING_SQL . ' as owner_rating')),
             relations: $this->relations,
         );
+    }
+
+    // Typeahead suggestions — top matching active rentals (featured first).
+    public function searchSuggestions(string $raw, int $limit = 8)
+    {
+        return $this->model->newQuery()
+            ->where('status', RentalCar::STATUS_ACTIVE)
+            ->select('rental_cars.*')
+            ->addSelect(DB::raw(self::OWNER_RATING_SQL . ' as owner_rating'))
+            ->when(trim($raw) !== '', fn($q) => $this->applySearch($q, $raw))
+            ->with(['images', 'city:id,name'])
+            ->orderByRaw(self::FEATURED_FIRST)
+            ->latest('created_at')
+            ->limit($limit)
+            ->get();
     }
 
     /** Distinct make + model combos among active listings (for the model filter). */

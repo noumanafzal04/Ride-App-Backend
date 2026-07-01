@@ -50,6 +50,27 @@ class CarListingController extends Controller
             ->message('Listing detail.');
     }
 
+    // Typeahead suggestions for the search box.
+    public function suggest(Request $request)
+    {
+        $items = $this->action->suggest((string) $request->query('q', ''), (int) $request->query('limit', 8));
+
+        return CarListingResource::collection($items)
+            ->wrapWith('listings')
+            ->message('Suggestions.');
+    }
+
+    // Public seller profile: their live + sold listings (seller info in data.meta.seller).
+    public function seller(int $userId)
+    {
+        $data = $this->action->sellerProfile($userId);
+
+        return CarListingResource::collection($data['listings'])
+            ->wrapWith('listings')
+            ->withMeta(['seller' => $data['seller']])
+            ->message('Seller profile.');
+    }
+
     public function store(StoreCarListingRequest $request)
     {
         $listing = $this->action->create(
@@ -80,6 +101,22 @@ class CarListingController extends Controller
         return (new CarListingResource($listing))
             ->wrapWith('listing')
             ->message('Marked as sold.');
+    }
+
+    // Feature pricing (price + duration) for the buy/sell module.
+    public function featurePricing()
+    {
+        return ApiResponse::success($this->action->featurePricing(), 'Feature pricing.');
+    }
+
+    // Owner pays to feature their listing (marked paid instantly for now).
+    public function feature(int $id)
+    {
+        $listing = $this->action->feature(auth()->id(), $id);
+
+        return (new CarListingResource($listing))
+            ->wrapWith('listing')
+            ->message('Your listing is now featured.');
     }
 
     public function destroy(int $id)

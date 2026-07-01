@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\Billing\SubscriptionPlanResource;
 use App\Http\Resources\Api\V1\Billing\SubscriptionResource;
+use App\Models\FeatureOrder;
+use App\Models\FeatureSetting;
 use App\Models\ModuleBillingSetting;
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
@@ -111,5 +113,63 @@ class AdminBillingController extends Controller
         }
         $sub = $this->billing->activatePlan($data['user_id'], $plan, 'admin', 0);
         return (new SubscriptionResource($sub->load(['plan', 'user'])))->wrapWith('subscription')->message('Plan granted.')->status(201);
+    }
+
+    // ── Featured (paid boost) ──
+    public function featureSettings()
+    {
+        $rows = FeatureSetting::orderBy('module')->get()->map(fn($s) => [
+            'module'        => $s->module,
+            'price'         => (float) $s->price,
+            'duration_days' => (int) $s->duration_days,
+            'is_active'     => (bool) $s->is_active,
+        ]);
+        return ApiResponse::success(['settings' => $rows], 'Feature settings.');
+    }
+
+    public function updateFeatureSetting(Request $request, string $module)
+    {
+        $data = $request->validate([
+            'price'         => ['required', 'numeric', 'min:0', 'max:9999999'],
+            'duration_days' => ['required', 'integer', 'min:1', 'max:365'],
+            'is_active'     => ['required', 'boolean'],
+        ]);
+        $setting = FeatureSetting::firstOrCreate(['module' => $module]);
+        $setting->update($data);
+        return ApiResponse::success(['setting' => [
+            'module' => $setting->module, 'price' => (float) $setting->price,
+            'duration_days' => (int) $setting->duration_days, 'is_active' => (bool) $setting->is_active,
+        ]], 'Feature setting updated.');
+    }
+
+    public function featureOrders(Request $request)
+    {
+        $orders = FeatureOrder::with(['user', 'orderable'])
+            ->when($request->query('module'), fn($q, $m) => $q->where('module', $m))
+            ->latest()
+            ->paginate((int) $request->query('per_page', 20));
+
+        $orders->getCollection()->transform(function ($o) {
+            $item = $o->orderable;
+            $title = $item ? trim("{$item->make} {$item->model}" . ($item->year ? " {$item->year}" : '')) : 'Deleted item';
+            return [
+                'id'         => $o->id,
+                'module'     => $o->module,
+                'item'       => $title,
+                'user'       => $o->user ? trim("{$o->user->first_name} {$o->user->last_name}") ?: 'User' : '—',
+                'phone'      => $o->user?->phone_number,
+                'amount'     => (float) $o->amount,
+                'days'       => (int) $o->days,
+                'status'     => $o->status,
+                'paid_at'    => $o->paid_at?->toISOString(),
+                'expires_at' => $o->expires_at?->toISOString(),
+                'created_at' => $o->created_at?->toISOString(),
+            ];
+        });
+
+        return ApiResponse::success([
+            'orders' => $orders->items(),
+            'meta'   => ['current_page' => $orders->currentPage(), 'last_page' => $orders->lastPage(), 'total' => $orders->total(), 'per_page' => $orders->perPage()],
+        ], 'Feature orders.');
     }
 }

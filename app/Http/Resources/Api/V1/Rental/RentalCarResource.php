@@ -55,7 +55,8 @@ class RentalCarResource extends ApiResource
             // Owner's average received rating (null until the owner has reviews).
             'rating'             => isset($this->owner_rating) && $this->owner_rating !== null ? round((float) $this->owner_rating, 1) : null,
 
-            'is_featured'        => (bool) $this->is_featured,
+            'is_featured'        => (bool) $this->is_featured && ($this->featured_until === null || $this->featured_until->isFuture()),
+            'featured_until'     => $this->featured_until?->toISOString(),
             'is_mine'            => $user ? (int) $user->id === (int) $this->user_id : false,
             'owner'              => $this->whenLoaded('owner', fn() => [
                 'id'    => $this->owner?->id,

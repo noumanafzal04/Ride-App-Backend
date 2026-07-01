@@ -17,6 +17,31 @@ class CarListingRepository extends BaseRepository
         'inspectionRequest:id,status,overall_grade,overall_score',
     ];
 
+    // "Currently featured" = flag set AND paid window not expired. Used to float featured to the top.
+    private const FEATURED_FIRST = '(car_listings.is_featured = 1 and (car_listings.featured_until is null or car_listings.featured_until >= now())) desc';
+
+    // Free-text search: every term must match SOME searchable field (AND across terms, OR across fields).
+    private function applySearch($q, string $raw): void
+    {
+        foreach (preg_split('/\s+/', trim($raw)) as $term) {
+            if ($term === '') continue;
+            $like = '%' . $term . '%';
+            $q->where(function ($w) use ($like) {
+                $w->where('make', 'like', $like)
+                    ->orWhere('model', 'like', $like)
+                    ->orWhere('variant', 'like', $like)
+                    ->orWhere('color', 'like', $like)
+                    ->orWhere('condition', 'like', $like)
+                    ->orWhere('transmission', 'like', $like)
+                    ->orWhere('fuel_type', 'like', $like)
+                    ->orWhere('area', 'like', $like)
+                    ->orWhere('description', 'like', $like)
+                    ->orWhere('year', 'like', $like)
+                    ->orWhereHas('city', fn($c) => $c->where('name', 'like', $like));
+            });
+        }
+    }
+
     // Public browse of ACTIVE listings, filtered + (optionally) ranked by proximity.
     public function paginatedBrowse(array $filters, ?float $nearLat = null, ?float $nearLng = null)
     {
@@ -25,12 +50,7 @@ class CarListingRepository extends BaseRepository
                 $q->where('car_listings.status', CarListing::STATUS_ACTIVE);
 
                 if (!empty($filters['q'])) {
-                    $s = $filters['q'];
-                    $q->where(function ($w) use ($s) {
-                        $w->where('make', 'like', "%{$s}%")
-                            ->orWhere('model', 'like', "%{$s}%")
-                            ->orWhere('variant', 'like', "%{$s}%");
-                    });
+                    $this->applySearch($q, $filters['q']);
                 }
                 if (!empty($filters['make']))         $q->where('make', $filters['make']);
                 if (!empty($filters['model']))        $q->where('model', $filters['model']);
@@ -47,9 +67,9 @@ class CarListingRepository extends BaseRepository
                 $sort = $filters['sort'] ?? null;
                 if ($sort === 'price_asc')      { $q->orderBy('price'); }
                 elseif ($sort === 'price_desc') { $q->orderByDesc('price'); }
-                elseif ($sort === 'newest')     { $q->latest('car_listings.created_at'); }
+                elseif ($sort === 'newest')     { $q->orderByRaw(self::FEATURED_FIRST)->latest('car_listings.created_at'); }
                 elseif ($nearLat !== null && $nearLng !== null && empty($filters['city_id'])) {
-                    // Location-aware default: show ALL, nearest city first.
+                    // Location-aware default: featured first, then nearest city.
                     $q->leftJoin('cities', 'cities.id', '=', 'car_listings.city_id')
                         ->select('car_listings.*')
                         ->selectRaw(
@@ -58,15 +78,28 @@ class CarListingRepository extends BaseRepository
                             . ' + sin(radians(?)) * sin(radians(cities.lat)) ))) ) AS distance_km',
                             [$nearLat, $nearLng, $nearLat]
                         )
+                        ->orderByRaw(self::FEATURED_FIRST)
                         ->orderByRaw('distance_km IS NULL')
-                        ->orderBy('distance_km')
-                        ->orderByDesc('car_listings.is_featured');
+                        ->orderBy('distance_km');
                 } else {
-                    $q->orderByDesc('is_featured')->latest('car_listings.created_at');
+                    $q->orderByRaw(self::FEATURED_FIRST)->latest('car_listings.created_at');
                 }
             },
             relations: $this->browseRelations,
         );
+    }
+
+    // Typeahead suggestions — top matching active listings (featured first).
+    public function searchSuggestions(string $raw, int $limit = 8)
+    {
+        return $this->model->newQuery()
+            ->where('status', CarListing::STATUS_ACTIVE)
+            ->when(trim($raw) !== '', fn($q) => $this->applySearch($q, $raw))
+            ->with(['images', 'city:id,name'])
+            ->orderByRaw(self::FEATURED_FIRST)
+            ->latest('created_at')
+            ->limit($limit)
+            ->get();
     }
 
     public function findActiveWithRelations(int $id): ?CarListing
@@ -104,6 +137,19 @@ class CarListingRepository extends BaseRepository
     {
         return $this->paginatedList(
             callback: fn($q) => $q->where('user_id', $userId)->latest(),
+            relations: $this->browseRelations,
+        );
+    }
+
+    // Public seller profile — their live + sold listings (active first, sold after).
+    public function sellerListings(int $userId)
+    {
+        return $this->list(
+            callback: fn($q) => $q->where('user_id', $userId)
+                ->whereIn('status', [CarListing::STATUS_ACTIVE, CarListing::STATUS_SOLD])
+                ->orderByRaw("status = '" . CarListing::STATUS_SOLD . "'") // active (0) before sold (1)
+                ->orderByDesc('is_featured')
+                ->latest(),
             relations: $this->browseRelations,
         );
     }

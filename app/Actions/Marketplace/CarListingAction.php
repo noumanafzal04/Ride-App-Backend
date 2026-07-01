@@ -19,7 +19,24 @@ class CarListingAction
         protected AdminNotificationService $adminNotifications,
         protected NotificationService $notifications,
         protected \App\Services\Billing\BillingService $billing,
+        protected \App\Services\Feature\FeatureService $feature,
     ) {}
+
+    /** Owner pays to feature their own listing (see FeatureService). */
+    public function feature(int $userId, int $id): CarListing
+    {
+        $listing = $this->ownedOrFail($userId, $id);
+        if ($listing->status === CarListing::STATUS_SOLD) {
+            throw new ApiException('This listing is already sold.', 422);
+        }
+        $this->feature->purchase($userId, $listing, \App\Services\Feature\FeatureService::MODULE_BUYSELL);
+        return $this->repository->findByIdWithRelations($id);
+    }
+
+    public function featurePricing(): array
+    {
+        return $this->feature->pricing(\App\Services\Feature\FeatureService::MODULE_BUYSELL);
+    }
 
     public function browse(array $filters, ?float $nearLat = null, ?float $nearLng = null)
     {
@@ -41,14 +58,48 @@ class CarListingAction
         return $this->repository->mine($userId);
     }
 
+    /** Typeahead suggestions for the search box. */
+    public function suggest(string $q, int $limit = 8)
+    {
+        return $this->repository->searchSuggestions($q, $limit);
+    }
+
+    /** Public seller profile: seller info + their live/sold listings. */
+    public function sellerProfile(int $userId): array
+    {
+        $seller = \App\Models\User::query()
+            ->select('id', 'first_name', 'last_name', 'phone_number', 'created_at')
+            ->find($userId);
+
+        if (!$seller) {
+            throw new ApiException('Seller not found.', 404);
+        }
+
+        $listings = $this->repository->sellerListings($userId);
+
+        return [
+            'seller' => [
+                'id'           => $seller->id,
+                'name'         => trim("{$seller->first_name} {$seller->last_name}") ?: 'Seller',
+                'phone'        => $seller->phone_number,
+                'member_since' => $seller->created_at?->toISOString(),
+                'active_count' => $listings->where('status', CarListing::STATUS_ACTIVE)->count(),
+                'sold_count'   => $listings->where('status', CarListing::STATUS_SOLD)->count(),
+            ],
+            'listings' => $listings,
+        ];
+    }
+
     public function create(int $userId, array $data, array $imageFiles = []): CarListing
     {
-        // Subscription gate (free while billing is disabled for buy/sell).
-        $gate = $this->billing->assertCanPost($userId, \App\Constants\BillingModule::BUYSELL);
+        $isManaged = ($data['listing_type'] ?? CarListing::TYPE_SELF) === CarListing::TYPE_MANAGED;
 
-        return DB::transaction(function () use ($userId, $data, $imageFiles, $gate) {
-            $type = ($data['listing_type'] ?? CarListing::TYPE_SELF) === CarListing::TYPE_MANAGED
-                ? CarListing::TYPE_MANAGED : CarListing::TYPE_SELF;
+        // Managed ("EZRide sells it for you") requests are free leads — skip the paywall.
+        // Self listings hit the subscription gate (free while billing is disabled for buy/sell).
+        $gate = $isManaged ? null : $this->billing->assertCanPost($userId, \App\Constants\BillingModule::BUYSELL);
+
+        return DB::transaction(function () use ($userId, $data, $imageFiles, $gate, $isManaged) {
+            $type = $isManaged ? CarListing::TYPE_MANAGED : CarListing::TYPE_SELF;
 
             // Self listings go live instantly; EZRide-managed go to review.
             $status = $type === CarListing::TYPE_MANAGED ? CarListing::STATUS_PENDING : CarListing::STATUS_ACTIVE;
@@ -95,7 +146,9 @@ class CarListingAction
                 );
             }
 
-            $this->billing->consume($userId, \App\Constants\BillingModule::BUYSELL, $gate);
+            if (!$isManaged) {
+                $this->billing->consume($userId, \App\Constants\BillingModule::BUYSELL, $gate);
+            }
 
             return $this->repository->findByIdWithRelations($listing->id);
         });

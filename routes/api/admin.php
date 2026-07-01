@@ -94,6 +94,11 @@ Route::prefix('admin')->group(function () {
         Route::get('billing/subscriptions', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'subscriptions'])->middleware('permission:billing.view');
         Route::post('billing/subscriptions/grant', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'grant'])->middleware('permission:billing.update');
 
+        // Featured (paid boost) — orders + price/duration settings
+        Route::get('feature-orders', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'featureOrders'])->middleware('permission:billing.view');
+        Route::get('feature-settings', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'featureSettings'])->middleware('permission:billing.view');
+        Route::put('feature-settings/{module}', [\App\Http\Controllers\Api\V1\Admin\AdminBillingController::class, 'updateFeatureSetting'])->middleware('permission:billing.update');
+
         // Module on/off settings (which app features are live)
         Route::get('modules', [\App\Http\Controllers\Api\V1\Admin\AdminModuleController::class, 'index'])->middleware('permission:settings.view');
         Route::put('modules/{key}', [\App\Http\Controllers\Api\V1\Admin\AdminModuleController::class, 'update'])->middleware('permission:settings.update');

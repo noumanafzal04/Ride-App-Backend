@@ -23,14 +23,15 @@ class CarListing extends Model
         'make', 'model', 'variant', 'year', 'price', 'mileage', 'condition',
         'transmission', 'fuel_type', 'engine_cc', 'color',
         'city_id', 'area', 'description', 'features',
-        'inspection_request_id', 'is_featured', 'views_count', 'sold_at',
+        'inspection_request_id', 'is_featured', 'featured_until', 'views_count', 'sold_at',
     ];
 
     protected $casts = [
-        'features'    => 'array',
-        'is_featured' => 'boolean',
-        'price'       => 'decimal:2',
-        'sold_at'     => 'datetime',
+        'features'       => 'array',
+        'is_featured'    => 'boolean',
+        'featured_until' => 'datetime',
+        'price'          => 'decimal:2',
+        'sold_at'        => 'datetime',
     ];
 
     public function seller(): BelongsTo

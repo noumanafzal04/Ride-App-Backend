@@ -7,13 +7,16 @@ use Illuminate\Support\Facades\Route;
 // Rent a Car (auth:api — required by parent group)
 Route::get('rentals', [RentalCarController::class, 'index']);                 // browse + filters + near
 Route::get('rentals/models', [RentalCarController::class, 'models']);         // distinct make/model list for filter
+Route::get('rentals/suggest', [RentalCarController::class, 'suggest']);        // typeahead suggestions
 Route::get('rentals/mine', [RentalCarController::class, 'mine']);             // my rental cars
+Route::get('rentals/feature-pricing', [RentalCarController::class, 'featurePricing']); // feature price/duration
 Route::get('rentals/bookings/mine', [RentalBookingController::class, 'mine']);        // my rental bookings (as customer)
 Route::get('rentals/bookings/owner', [RentalBookingController::class, 'ownerBookings']); // bookings on my cars
 Route::get('rentals/{id}', [RentalCarController::class, 'show'])->whereNumber('id');
 Route::post('rentals', [RentalCarController::class, 'store']);                 // list a car (multipart)
 Route::put('rentals/{id}', [RentalCarController::class, 'update'])->whereNumber('id');
 Route::patch('rentals/{id}/status', [RentalCarController::class, 'setStatus'])->whereNumber('id');
+Route::post('rentals/{id}/feature', [RentalCarController::class, 'feature'])->whereNumber('id'); // pay to feature
 Route::delete('rentals/{id}', [RentalCarController::class, 'destroy'])->whereNumber('id');
 
 // Bookings
